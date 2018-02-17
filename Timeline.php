@@ -7,6 +7,8 @@ class Timeline
 {
     protected $values;
 
+    private $date_format = "Y-m-d";
+
     protected function __construct($values)
     {
         $this->values = $values;
@@ -56,17 +58,14 @@ class Timeline
      */
     public static function fromIntervals(array $intervals)
     {
+        $intervals = self::flatten($intervals);
+
         // Extract weights.
         $t = array_column($intervals, 2);
 
         if (count($t) != 0 && count($t) != count($intervals)) {
             throw new \InvalidArgumentException("Interval weight must be set for all, or no interval.");
         }
-
-        // Ensure start and end dates are in the right order.
-        $intervals = array_map(function (array $i) {
-            return $i[0] <= $i[1] ? [$i[0], $i[1]] : [$i[1], $i[0]];
-        }, $intervals);
 
         // Change dates to timestamps.
         $values = array_map(function (array $i) {
@@ -111,8 +110,8 @@ class Timeline
                 $i[0],
                 $i[1],
                 !empty($t) ? (int)($t[$k] * 100) : 50,
-                $intervals[$k][0]->format('Y-m-d'), // TODO Make this an option.
-                $intervals[$k][1]->format('Y-m-d')
+                $intervals[$k][0],
+                $intervals[$k][1]
             ];
         }, array_keys($values), $values);
 
@@ -153,7 +152,8 @@ class Timeline
             // The weight of the new interval is the sum of the value of each date before its end date.
             $ival = array_reduce(array_column(array_slice($dates, 0, $i), 1),
                 function ($a, $b) {
-                // Not using array_sum here because of possible decimal errors.
+                    // Not using array_sum here because of possible decimal errors.
+                    // TODO Find a cleaner method of preventing decimal errors.
                     return round($a + $b, 1);
                 });
             $flat[] = [$dates[$i - 1][0], $dates[$i][0], $ival];
@@ -189,14 +189,28 @@ class Timeline
                         right: <?= 100 - $v[1] ?>%;
                         /*width: <?= $v[1] - $v[0] ?>%;*/
                         "
-                     data-value="<?= $v[2] ?>"
-                     title="<?= $v[3] . ' => ' . $v[4] . ' : ' . $v[2] ?>%"
-                ></div>
+                     data-title="<?=
+                     $v[3]->format($this->date_format)
+                     . ' ➔ ' . $v[4]->format($this->date_format)
+                     . ' : ' . $v[2]
+                     ?>%"
+                >
+                </div>
             <?php endforeach; ?>
         </div>
         <?php
         $html = ob_get_contents();
         ob_clean();
         return $html;
+    }
+
+    /**
+     * Sets the date format used in the data-title attribute of the timeline HTML.
+     *
+     * @param $format
+     */
+    public function setDateFormat($format)
+    {
+        $this->date_format = $format;
     }
 }

@@ -66,11 +66,16 @@ class Timeline
             return [
                 $i[0],
                 $i[1],
-                !empty($t) ? ($t[$k] !== null ? (int)($t[$k] * 100) : null) : 50,
+                !empty($t) ? (isset($t[$k]) ? (int)($t[$k] * 100) : null) : 50,
                 $intervals[$k][0],
                 $intervals[$k][1]
             ];
         }, array_keys($values), $values);
+
+        // Put isolated dates at the end.
+        uasort($values, function ($i){
+            return $i[0] === $i[1] ? 1 : -1;
+        });
 
         $this->values = $values;
     }
@@ -87,6 +92,9 @@ class Timeline
     {
         self::checkFormat($intervals);
 
+        // Extract isolated dates.
+        $isolatedDates = self::extractDates($intervals);
+
         // Make an array of dates.
         // Assign the value of the weight to each date.
         // Assign and a '+' sign if it is a start date, and a '-' if it is an end date.
@@ -99,7 +107,6 @@ class Timeline
         usort($dates, function (array $d1, array $d2) {
             return ($d1[0] < $d2[0]) ? -1 : 1;
         });
-
 
         $flat = [];
         // Create new intervals for each set of two consecutive dates,
@@ -120,11 +127,10 @@ class Timeline
 
             $ival = array_reduce($previousDates,
                 function ($a, $b) {
-                    // Not using array_sum here because of possible decimal errors.
-                    // TODO Find a cleaner method of preventing decimal errors.
                     return $a + ($b[2] === '+' ? $b[1] : -$b[1]);
                 });
 
+            // TODO Find a cleaner method of preventing decimal errors.
             $ival = round($ival, 2);
 
             if ($pluses == $minuses) {
@@ -140,7 +146,39 @@ class Timeline
             $flat[] = [$dates[$i - 1][0], $dates[$i][0], $ival];
         }
 
+        // Remove empty interval generated when two or more intervals share a common date.
+        $flat = array_values(array_filter($flat, function($i){
+            return $i[0] !== $i[1];
+        }));
+
+
+        // Push isolated dates back into the array.
+        if (!empty($isolatedDates)) {
+            array_push($flat, ...$isolatedDates);
+        }
+
         return $flat;
+    }
+
+    /**
+     * Extract isolated dates from an array of intervals.
+     *
+     * Intervals with the exact same start and end date will be considered as isolated dates.
+     *
+     * They will be removed from the initial array, and returned in a separate array.
+     *
+     * @param array $intervals The initial array.
+     * @return array An array containing only isolated dates.
+     */
+    public static function extractDates(array &$intervals)
+    {
+        $dates = array_filter($intervals, function($interval){
+            return $interval[0] === $interval[1];
+        });
+
+        $intervals = array_diff_key($intervals, $dates);
+
+        return $dates;
     }
 
     /**
@@ -168,9 +206,9 @@ class Timeline
 
         if (isset($start)) {
             $intervals = array_map(function ($i) use ($start) {
-                if ($i[0] < $start) {
+                if ($i[0] < $start) { // If the start date is before the lower bound...
                     if ($i[1] < $start) {
-                        // If both dates are before the given lower bound, set the interval to false.
+                        // ... and the end date is also before the lower bound, set the interval to false.
                         $i = false;
                     } else {
                         // If only the start date is before the lower bound, set it to the bound value.
@@ -220,17 +258,18 @@ class Timeline
 
             if (!$i[0] instanceof \DateTime) {
                 $t = gettype($i[0]);
-                throw new \InvalidArgumentException("The first element of an interval array should be an instance of DateTime, $t found.");
+                throw new \InvalidArgumentException("The first element of an interval array should be an instance of DateTime, $t given.");
             }
 
             if (!$i[1] instanceof \DateTime) {
                 $t = gettype($i[1]);
-                throw new \InvalidArgumentException("The second element of an interval array should be an instance of DateTime, $t found.");
+                throw new \InvalidArgumentException("The second element of an interval array should be an instance of DateTime, $t given.");
             }
 
             if (isset($i[2])) {
                 if (!is_numeric($i[2])) {
-                    throw new \InvalidArgumentException("The third element of an interval array should be numeric or null");
+                    $t = gettype($i[1]);
+                    throw new \InvalidArgumentException("The third element of an interval array should be numeric or null, $t given.");
                 }
                 $t++;
             }
@@ -256,40 +295,52 @@ class Timeline
         ?>
         <div class="foo" style="position: relative; width: 100%; height: 20px;">
             <?php foreach ($vs as $k => $v) : ?>
-                <?php if ($v[2] !== null): // Interval with non null weight. ?>
-                    <div class="bar bar<?= $k; ?>" style="position: absolute; height: 20px;
+                <?php if ($v[3] === $v[4]): // Isolated date. ?>
+                    <div class="bar bar<?= $k; ?>" style="position: absolute; height: 20px; box-sizing: content-box;
+                            border-width: 0 2px 0 2px;
+                            border-style: solid;
+                            border-color: black;
                             left:  <?= $v[0] ?>%;
-                            right: <?= 100 - $v[1] ?>%;
-                            /*width: <?= $v[1] - $v[0] ?>%;*/
-                            background:
-                    <?php if ($v[2] < 100): ?>
-                            rgb(<?= 255 - $v[2] / 2 ?>, <?= $v[2] * 2.5 ?>, 0);
-                    <?php elseif ($v[2] > 100): ?>
-                            rgb(170, 0, <?= $v[2] ?>);
-                    <?php else: ?>
-                            rgb(00, 255, 0);
-                    <?php endif ?>"
-                         data-title="<?=
-                         $v[3]->format($this->date_format)
-                         . ' ➔ ' .
-                         $v[4]->format($this->date_format)
-                         . ' : ' .
-                         $v[2]
-                         ?>%"
+                            width: 0;"
+                         data-title="<?= $v[3]->format($this->date_format) ?>"
                     >
                     </div>
-                <?php else: // Interval with null weight. ?>
-                    <div class="bar bar<?= $k; ?>" style="position: absolute; height: 20px;
-                            left:  <?= $v[0] ?>%;
-                            right: <?= 100 - $v[1] ?>%;
-                            /*width: <?= $v[1] - $v[0] ?>%;*/"
-                         data-title="<?=
-                         $v[3]->format($this->date_format)
-                         . ' ➔ ' .
-                         $v[4]->format($this->date_format)
-                         ?>"
-                    >
-                    </div>
+                <?php else: ?>
+                    <?php if ($v[2] !== null): // Interval with non null weight. ?>
+                        <div class="bar bar<?= $k; ?>" style="position: absolute; height: 20px;
+                                left:  <?= $v[0] ?>%;
+                                right: <?= 100 - $v[1] ?>%;
+                                /*width: <?= $v[1] - $v[0] ?>%;*/
+                                background:
+                        <?php if ($v[2] < 100): ?>
+                                rgb(<?= 255 - $v[2] / 2 ?>, <?= $v[2] * 2.5 ?>, 0);
+                        <?php elseif ($v[2] > 100): ?>
+                                rgb(170, 0, <?= $v[2] ?>);
+                        <?php else: ?>
+                                rgb(00, 255, 0);
+                        <?php endif ?>"
+                             data-title="<?=
+                             $v[3]->format($this->date_format)
+                             . ' ➔ ' .
+                             $v[4]->format($this->date_format)
+                             . ' : ' .
+                             $v[2]
+                             ?>%"
+                        >
+                        </div>
+                    <?php else: // Interval with null weight. ?>
+                        <div class="bar bar<?= $k; ?>" style="position: absolute; height: 20px;
+                                left:  <?= $v[0] ?>%;
+                                right: <?= 100 - $v[1] ?>%;
+                                /*width: <?= $v[1] - $v[0] ?>%;*/"
+                             data-title="<?=
+                             $v[3]->format($this->date_format)
+                             . ' ➔ ' .
+                             $v[4]->format($this->date_format)
+                             ?>"
+                        >
+                        </div>
+                    <?php endif; ?>
                 <?php endif; ?>
             <?php endforeach; ?>
         </div>

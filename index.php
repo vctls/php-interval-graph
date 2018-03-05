@@ -1,13 +1,59 @@
 <?php
-function __autoload($class_name)
-{
-    include $class_name . '.php';
-}
+
+include_once 'Timeline.php';
 
 function rd($min = 1514764800, $max = 1577750400)
 {
     return (new DateTime)->setTimestamp(mt_rand($min, $max));
 }
+
+// TODO Display the intervals individually before each timeline.
+
+$overlappedIntervals = [
+    [new DateTime('now'), new DateTime('now + 4 days'), 7 / 10],
+    [new DateTime('now + 1 day'), new DateTime('now + 5 days'), 3 / 10],
+    [new DateTime('now + 2 day'), new DateTime('now + 3 days'), 3 / 10],
+];
+$overlapped = new Timeline($overlappedIntervals);
+
+$withNullIntervals = new Timeline([
+    [new DateTime('now'), new DateTime('now + 3 days'), 4 / 10],
+    [new DateTime('now + 1 day'), new DateTime('now + 2 days')],
+    [new DateTime('now + 2 day'), new DateTime('now + 3 days'), 4 / 10],
+    [new DateTime('now + 4 day'), new DateTime('now + 5 days'), 5 / 10],
+]);
+
+$longIntervals = [
+    [new DateTime('today'), new DateTime('today + 3 days'), 2 / 10],
+    [new DateTime('today + 1 day'), new DateTime('today + 4 days'), 2 / 10],
+    [new DateTime('today + 2 day'), new DateTime('today + 5 days'), 3 / 10],
+    [new DateTime('today + 3 day'), new DateTime('today + 6 days'), 5 / 10],
+    [new DateTime('today + 4 day'), new DateTime('today + 7 days'), 4 / 10],
+    [new DateTime('today + 5 day'), new DateTime('today + 8 days'), 2 / 10],
+    [new DateTime('today + 6 day'), new DateTime('today + 9 days'), 2 / 10],
+];
+
+$long = new Timeline($longIntervals, 'Y-m-d H:i:s');
+$today = new DateTime('today');
+$date1 = (clone $today)->add(new DateInterval('PT60H'));
+$date2 = (clone $today)->add(new DateInterval('PT108H'));
+$date3 = (clone $date2)->add(new DateInterval('PT60H'));
+
+$truncated = new Timeline(Timeline::truncate(
+        $longIntervals,
+        $date1,
+        $date2
+), 'Y-m-d H:i:s');
+
+
+$withDates = new Timeline([
+    [$date1, $date1],
+    [new DateTime('now'), new DateTime('now + 4 days'), 7 / 10],
+    [$date2, $date2],
+    [new DateTime('now + 1 day'), new DateTime('now + 5 days'), 3 / 10],
+    [new DateTime('now + 2 day'), new DateTime('now + 3 days'), 3 / 10],
+    [$date3, $date3],
+]);
 
 $timelines = [];
 foreach (range(0, 20) as $t) {
@@ -18,39 +64,6 @@ foreach (range(0, 20) as $t) {
     }
     $timelines[] = new Timeline($intervals);
 }
-
-
-$timelineTest = new Timeline([
-    [new DateTime('now'), new DateTime('now + 4 days'), 7 / 10],
-    [new DateTime('now + 1 day'), new DateTime('now + 5 days'), 3 / 10],
-    [new DateTime('now + 2 day'), new DateTime('now + 3 days'), 3 / 10],
-]);
-
-$withNullIntervals = new Timeline([
-    [new DateTime('now'), new DateTime('now + 3 days'), 4 / 10],
-    [new DateTime('now + 1 day'), new DateTime('now + 2 days')],
-    [new DateTime('now + 2 day'), new DateTime('now + 3 days'), 4 / 10],
-    [new DateTime('now + 4 day'), new DateTime('now + 5 days'), 5 / 10],
-]);
-
-$longIntervals = [
-    [new DateTime('now'), new DateTime('now + 3 days'), 2 / 10],
-    [new DateTime('now + 1 day'), new DateTime('now + 4 days'), 2 / 10],
-    [new DateTime('now + 2 day'), new DateTime('now + 5 days'), 3 / 10],
-    [new DateTime('now + 3 day'), new DateTime('now + 6 days'), 5 / 10],
-    [new DateTime('now + 4 day'), new DateTime('now + 7 days'), 4 / 10],
-    [new DateTime('now + 5 day'), new DateTime('now + 8 days'), 2 / 10],
-    [new DateTime('now + 6 day'), new DateTime('now + 9 days'), 2 / 10],
-];
-
-$long = new Timeline($longIntervals, 'Y-m-d H:i:s');
-$lowerBound = new DateTime('now + 60 hours');
-$higherBound = new DateTime('now + 108 hours');
-$truncated = new Timeline(Timeline::truncate(
-        $longIntervals,
-        $lowerBound,
-        $higherBound
-), 'Y-m-d H:i:s');
 
 ?>
 <html>
@@ -80,14 +93,9 @@ $truncated = new Timeline(Timeline::truncate(
         }
     </style>
 </head>
-<body>
-<p>A bunch of random timelines.</p>
-<?php foreach ($timelines as $timeline): ?>
-    <?= $timeline ?>
-<?php endforeach; ?>
-<br>
+<body style="font-family: sans-serif">
 <p>Overlapping intervals with a total rate reaching higher than 100%.</p>
-<?= $timelineTest ?>
+<?= $overlapped ?>
 
 <p>
     Overlapping intervals with a couple null intervals.<br>
@@ -102,9 +110,19 @@ $truncated = new Timeline(Timeline::truncate(
 <?= $long ?>
 
 <p>
-    The same timeline, truncated between <?= $lowerBound->format('Y-m-d H:i:s') ?>
-    and <?= $higherBound->format('Y-m-d H:i:s') ?>.
+    The same timeline, truncated between <?= $date1->format('Y-m-d H:i:s') ?>
+    and <?= $date2->format('Y-m-d H:i:s') ?>.
 <?= $truncated ?>
 </p>
+
+<p>
+    A timeline with three isolated dates, of which one goes beyond all intervals.
+<?= $withDates ?>
+</p>
+<p>A bunch of random timelines.</p>
+<?php foreach ($timelines as $timeline): ?>
+    <?= $timeline ?>
+<?php endforeach; ?>
+<br>
 </body>
 </html>

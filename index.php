@@ -68,6 +68,7 @@ foreach (range(0, 20) as $t) {
 ?>
 <html>
 <head>
+    <title>Php Timeline demo</title>
     <style>
         .bar:hover {
             border: thin solid black;
@@ -94,6 +95,13 @@ foreach (range(0, 20) as $t) {
     </style>
 </head>
 <body style="font-family: sans-serif">
+<header>
+    <h1>Php Timeline demo</h1>
+</header>
+<p>
+    Php Timeline is a little utility to manipulate and visulize arrays of weighted date intervals.
+</p>
+<a href="https://github.com/vctls/php-timeline">https://github.com/vctls/php-timeline</a>
 <p>Overlapping intervals with a total rate reaching higher than 100%.</p>
 <?= $overlapped ?>
 

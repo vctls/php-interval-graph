@@ -73,7 +73,7 @@ class Timeline
         }, array_keys($values), $values);
 
         // Put isolated dates at the end.
-        uasort($values, function ($i){
+        uasort($values, function ($i) {
             return $i[0] === $i[1] ? 1 : -1;
         });
 
@@ -135,7 +135,7 @@ class Timeline
 
             if ($pluses == $minuses) {
                 if ($ival != 0) {
-                    throw new LogicException(
+                    throw new \LogicException(
                         "Although there are as many start and end dates, the sum of weights is different than 0:"
                         . " $ival"
                     );
@@ -147,7 +147,7 @@ class Timeline
         }
 
         // Remove empty interval generated when two or more intervals share a common date.
-        $flat = array_values(array_filter($flat, function($i){
+        $flat = array_values(array_filter($flat, function ($i) {
             return $i[0] !== $i[1];
         }));
 
@@ -172,7 +172,7 @@ class Timeline
      */
     public static function extractDates(array &$intervals)
     {
-        $dates = array_filter($intervals, function($interval){
+        $dates = array_filter($intervals, function ($interval) {
             return $interval[0] === $interval[1];
         });
 
@@ -253,25 +253,36 @@ class Timeline
      */
     public static function checkFormat(array &$intervals)
     {
-        $t = 0;
         foreach ($intervals as $k => $i) {
+
+            if (!is_array($i)) {
+                $t = gettype($i);
+                throw new \InvalidArgumentException(
+                    "Each element of the '\$intervals' array should be an array, $t given."
+                );
+            }
 
             if (!$i[0] instanceof \DateTime) {
                 $t = gettype($i[0]);
-                throw new \InvalidArgumentException("The first element of an interval array should be an instance of DateTime, $t given.");
+                throw new \InvalidArgumentException(
+                    "The first element of an interval array should be an instance of DateTime, $t given."
+                );
             }
 
             if (!$i[1] instanceof \DateTime) {
                 $t = gettype($i[1]);
-                throw new \InvalidArgumentException("The second element of an interval array should be an instance of DateTime, $t given.");
+                throw new \InvalidArgumentException(
+                    "The second element of an interval array should be an instance of DateTime, $t given."
+                );
             }
 
             if (isset($i[2])) {
                 if (!is_numeric($i[2])) {
                     $t = gettype($i[1]);
-                    throw new \InvalidArgumentException("The third element of an interval array should be numeric or null, $t given.");
+                    throw new \InvalidArgumentException(
+                        "The third element of an interval array should be numeric or null, $t given."
+                    );
                 }
-                $t++;
             }
 
             // Ensure start and end dates are in the right order.

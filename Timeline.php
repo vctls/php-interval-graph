@@ -10,6 +10,72 @@ class Timeline
     protected $date_format = "Y-m-d";
 
     /**
+     * @var array $palette An array of percentages with corresponding color codes.
+     *
+     */
+    protected $palette = [
+        [0, '#ff5450'],
+        [0, '#ff5450'],
+        [50, '#ff9431'],
+        [100, '#d7e174'],
+        [100, '#5cb781'],
+        [100, '#557ebf'],
+    ];
+
+    protected $bgColor = '#e1e0eb';
+
+    /**
+     * Set the color palette for percent ranges.
+     *
+     * Ranges should be simple arrays, containing only the upper bound and the corresponding color value, like this:
+     *  [ 50, '#ff9431' ]
+     *
+     * For discrete values, simply insert the same value twice.
+     *
+     * @param array $palette
+     * @return Timeline
+     */
+    public function setPalette(array $palette)
+    {
+        usort($palette, function ($p1, $p2) {
+            return $p2[0] - $p1[0];
+        });
+        $this->palette = $palette;
+        return $this;
+    }
+
+    public function setBGColor($color)
+    {
+        $this->bgColor = $color;
+        return $this;
+    }
+
+    /**
+     * Get the hexadecimal color code for the given percentage.
+     *
+     * @param integer $percent
+     * @return string
+     */
+    public function getColor($percent)
+    {
+        $palette = $this->palette;
+        if ($percent === null) {
+            return isset($this->bgColor) ? $this->bgColor : '';
+        }
+        for ($i = 0; $i < count($palette); $i++) {
+            if (
+                $i === 0 && $percent < $palette[$i][0]
+                || $i > 0 && $palette[$i][0] === $palette[$i - 1][0] && $percent === $palette[$i][0]
+                || $i > 0 && $palette[$i][0] !== $palette[$i - 1][0] && $percent < $palette[$i][0]
+                || $i === (count($palette) - 1) && $percent > $palette[$i][0]
+            ) {
+                return $palette[$i][1];
+            }
+        }
+        throw new \LogicException("The percentage $percent did not match any range in the color palette.");
+    }
+
+    /**
      * Create a timeline from weighed intervals.
      *
      * @param array[] $intervals An array of weighted date intervals, with a start date, end date and a weight from 0 to 1
@@ -95,15 +161,9 @@ class Timeline
         // Extract isolated dates.
         $isolatedDates = self::extractDates($intervals);
 
-        // Make an array of dates.
-        // Assign the value of the weight to each date.
-        // Assign and a '+' sign if it is a start date, and a '-' if it is an end date.
-        foreach ($intervals as $interval) {
-            $dates[] = [$interval[0], isset($interval[2]) ? $interval[2] : null, '+'];
-            $dates[] = [$interval[1], isset($interval[2]) ? $interval[2] : null, '-'];
-        }
+        $dates = self::intervalsToSignedDates($intervals);
 
-        // Order by date.
+        // Order the dates.
         usort($dates, function (array $d1, array $d2) {
             return ($d1[0] < $d2[0]) ? -1 : 1;
         });
@@ -161,6 +221,52 @@ class Timeline
     }
 
     /**
+     * Make an array of dates from an array of intervals.
+     * Assign the value of the weight to each date.
+     * Assign and a '+' sign if it is a start date, and a '-' if it is an end date.
+     *
+     * @param $intervals
+     * @return array
+     */
+    public static function intervalsToSignedDates($intervals)
+    {
+        $dates = [];
+        foreach ($intervals as $interval) {
+            $dates[] = [$interval[0], isset($interval[2]) ? $interval[2] : null, '+'];
+            $dates[] = [$interval[1], isset($interval[2]) ? $interval[2] : null, '-'];
+        }
+        return $dates;
+    }
+
+    /**
+     * Get the maximum date in an array of intervals.
+     *
+     * @param $intervals
+     * @return \DateTime
+     */
+    public static function maxDate($intervals)
+    {
+        self::checkFormat($intervals);
+        $dates = array_column($intervals, 1);
+        sort($dates);
+        return array_pop($dates);
+    }
+
+    /**
+     * Get the minimum date in an array of intervals.
+     *
+     * @param $intervals
+     * @return \DateTime
+     */
+    public static function minDate($intervals)
+    {
+        self::checkFormat($intervals);
+        $dates = array_column($intervals, 0);
+        sort($dates);
+        return array_shift($dates);
+    }
+
+    /**
      * Extract isolated dates from an array of intervals.
      *
      * Intervals with the exact same start and end date will be considered as isolated dates.
@@ -197,9 +303,10 @@ class Timeline
      * @param array $intervals
      * @param \DateTime $start
      * @param \DateTime $end
+     * @param bool $padding Add null weighted intervals between the bounds and the first and last date.
      * @return array
      */
-    public static function truncate(array $intervals, \DateTime $start = null, \DateTime $end = null)
+    public static function truncate(array $intervals, \DateTime $start = null, \DateTime $end = null, $padding = false)
     {
         // Ensure the $intervals array is well formatted.
         self::checkFormat($intervals);
@@ -217,8 +324,21 @@ class Timeline
                 }
                 return $i;
             }, $intervals);
+
+            // Remove false elements.
+            $intervals = array_filter($intervals);
+
+            // If padding is required and a lower bound is set and inferior to the min date,
+            // add a wightless interval between that date and the bound.
+            if ($padding) {
+                $minDate = self::minDate($intervals);
+                if ($minDate > $start) {
+                    $intervals[] = [$start, $minDate];
+                }
+            }
         }
 
+        // TODO DRY
         if (isset($end)) {
             $intervals = array_map(function ($i) use ($end) {
                 if ($i[1] > $end) {
@@ -232,10 +352,21 @@ class Timeline
                 }
                 return $i;
             }, $intervals);
+
+            // Remove false elements.
+            $intervals = array_filter($intervals);
+
+            // If padding is required and a higher bound is set and superior to the max date,
+            // add a wightless interval between that date and the bound.
+            if ($padding) {
+                $maxDate = self::maxDate($intervals);
+                if ($maxDate < $end) {
+                    $intervals[] = [$end, $maxDate];
+                }
+            }
         }
 
-        // Remove all 'false' elements.
-        return array_filter($intervals);
+        return $intervals;
     }
 
     /**
@@ -276,13 +407,11 @@ class Timeline
                 );
             }
 
-            if (isset($i[2])) {
-                if (!is_numeric($i[2])) {
-                    $t = gettype($i[1]);
-                    throw new \InvalidArgumentException(
-                        "The third element of an interval array should be numeric or null, $t given."
-                    );
-                }
+            if (isset($i[2]) && !is_numeric($i[2])) {
+                $t = gettype($i[1]);
+                throw new \InvalidArgumentException(
+                    "The third element of an interval array should be numeric or null, $t given."
+                );
             }
 
             // Ensure start and end dates are in the right order.
@@ -304,7 +433,8 @@ class Timeline
         $vs = $this->values;
         ob_start();
         ?>
-        <div class="foo" style="position: relative; width: 100%; height: 20px;">
+        <div class="foo" style="position: relative; width: 100%; height: 20px;
+        <?= isset($this->bgColor) ? ' background-color: ' . $this->bgColor . ';' : '' ?>">
             <?php foreach ($vs as $k => $v) : ?>
                 <?php if ($v[3] === $v[4]): // Isolated date. ?>
                     <div class="bar bar<?= $k; ?>" style="position: absolute; height: 20px; box-sizing: content-box;
@@ -317,41 +447,20 @@ class Timeline
                     >
                     </div>
                 <?php else: ?>
-                    <?php if ($v[2] !== null): // Interval with non null weight. ?>
-                        <div class="bar bar<?= $k; ?>" style="position: absolute; height: 20px;
-                                left:  <?= $v[0] ?>%;
-                                right: <?= 100 - $v[1] ?>%;
-                                /*width: <?= $v[1] - $v[0] ?>%;*/
-                                background:
-                        <?php if ($v[2] < 100): ?>
-                                rgb(<?= 255 - $v[2] / 2 ?>, <?= $v[2] * 2.5 ?>, 0);
-                        <?php elseif ($v[2] > 100): ?>
-                                rgb(170, 0, <?= $v[2] ?>);
-                        <?php else: ?>
-                                rgb(00, 255, 0);
-                        <?php endif ?>"
-                             data-title="<?=
-                             $v[3]->format($this->date_format)
-                             . ' ➔ ' .
-                             $v[4]->format($this->date_format)
-                             . ' : ' .
-                             $v[2]
-                             ?>%"
-                        >
-                        </div>
-                    <?php else: // Interval with null weight. ?>
-                        <div class="bar bar<?= $k; ?>" style="position: absolute; height: 20px;
-                                left:  <?= $v[0] ?>%;
-                                right: <?= 100 - $v[1] ?>%;
-                                /*width: <?= $v[1] - $v[0] ?>%;*/"
-                             data-title="<?=
-                             $v[3]->format($this->date_format)
-                             . ' ➔ ' .
-                             $v[4]->format($this->date_format)
-                             ?>"
-                        >
-                        </div>
-                    <?php endif; ?>
+                    <div class="bar bar<?= $k; ?>" style="position: absolute; height: 20px;
+                            left:  <?= $v[0] ?>%;
+                            right: <?= 100 - $v[1] ?>%;
+                            /*width: <?= $v[1] - $v[0] ?>%;*/
+                            background-color: <?= $this->getColor($v[2]) ?>"
+                         data-title="<?=
+                         $v[3]->format($this->date_format)
+                         . ' ➔ ' .
+                         $v[4]->format($this->date_format)
+                         . ' : ' .
+                         $v[2]
+                         ?>%"
+                    >
+                    </div>
                 <?php endif; ?>
             <?php endforeach; ?>
         </div>

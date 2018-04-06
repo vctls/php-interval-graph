@@ -23,5 +23,12 @@ class TimelineTest extends \PHPUnit\Framework\TestCase
         $this->assertTrue($long instanceof Timeline, 'A timeline could not be created.');
     }
 
+    public function testCheck()
+    {
+        $this->expectException(InvalidArgumentException::class);
+        $badArgument = ['something something'];
+        Timeline::checkFormat($badArgument);
+    }
+
     // TODO Do some actual tests.
 }

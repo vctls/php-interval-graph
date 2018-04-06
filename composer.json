@@ -1,0 +1,14 @@
+{
+    "name": "vctls/php-timeline",
+    "description": "A small utility to manipulate and display arrays of weighted date intervals.",
+    "type": "library",
+    "license": "MIT",
+    "authors": [
+        {
+            "name": "Victor Toulouse",
+            "email": "toulousevictor@gmail.com"
+        }
+    ],
+    "minimum-stability": "dev",
+    "require": {}
+}

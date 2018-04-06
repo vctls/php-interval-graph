@@ -1,0 +1,6 @@
+{
+  "name": "PHP Timeline",
+  "description": "A small utility to manipulate and display periods of date intervals",
+  "repository": "https://github.com/vctls/php-timeline.git",
+  "addons": []
+}

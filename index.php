@@ -1,6 +1,6 @@
 <?php
 
-include_once 'Timeline.php';
+include_once 'src/Timeline.php';
 
 function rd($min = 1514764800, $max = 1577750400)
 {
@@ -54,6 +54,8 @@ $withDates = new Timeline([
     [new DateTime('now + 2 day'), new DateTime('now + 3 days'), 3 / 10],
     [$date3, $date3],
 ]);
+
+$test = $withDates->draw();
 
 $timelines = [];
 foreach (range(0, 20) as $t) {

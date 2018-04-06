@@ -5,9 +5,7 @@
  * Time: 19:27
  */
 
-use PHPUnit\Framework\TestCase;
-
-class TimelineTest extends TestCase
+class TimelineTest extends \PHPUnit\Framework\TestCase
 {
     public function testDraw()
     {

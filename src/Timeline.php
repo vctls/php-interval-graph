@@ -456,9 +456,8 @@ class Timeline
                          $v[3]->format($this->date_format)
                          . ' ➔ ' .
                          $v[4]->format($this->date_format)
-                         . ' : ' .
-                         $v[2]
-                         ?>%"
+                         . (isset($v[2]) ? ' : ' . $v[2] . '%' : '')
+                         ?>"
                     >
                     </div>
                 <?php endif; ?>

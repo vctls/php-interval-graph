@@ -7,4 +7,6 @@ into an array of adjacent intervals with their total calculated weight.
 
 Useful for displaying availability rates and such over a period of time in a basic, compatible way.
 
-Demo : https://boiling-anchorage-33872.herokuapp.com/
+
+
+Demo : https://php-timeline-demo.herokuapp.com/

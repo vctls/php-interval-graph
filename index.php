@@ -1,6 +1,6 @@
 <?php
 
-include_once 'src/Timeline.php';
+require_once 'vendor/autoload.php';
 
 function rd($min = 1514764800, $max = 1577750400)
 {
@@ -8,13 +8,14 @@ function rd($min = 1514764800, $max = 1577750400)
 }
 
 // TODO Display the intervals individually before each timeline.
-
-$overlappedIntervals = [
-    [new DateTime('now'), new DateTime('now + 4 days'), 7 / 10],
-    [new DateTime('now + 1 day'), new DateTime('now + 5 days'), 3 / 10],
-    [new DateTime('now + 2 day'), new DateTime('now + 3 days'), 3 / 10],
-];
-$overlapped = new Timeline($overlappedIntervals);
+$base = [new DateTime('now'), new DateTime('now + 5 days')];
+$date1 = [new DateTime('now'), new DateTime('now + 4 days'), 7 / 10];
+$date2 = [new DateTime('now + 1 day'), new DateTime('now + 5 days'), 3 / 10];
+$date3 = [new DateTime('now + 2 day'), new DateTime('now + 3 days'), 3 / 10];
+$overlapped1 = new Timeline([$base, $date1]);
+$overlapped2 = new Timeline([$base, $date2]);
+$overlapped3 = new Timeline([$base, $date3]);
+$overlapped = new Timeline([$base, $date1, $date2, $date3]);
 
 $withNullIntervals = new Timeline([
     [new DateTime('now'), new DateTime('now + 3 days'), 4 / 10],
@@ -76,7 +77,7 @@ foreach (range(0, 20) as $t) {
             border: thin solid black;
             box-sizing: border-box;
         }
-
+        /* TODO Prevent the popup from going out of the screen. */
         .bar:hover:after {
             content: attr(data-title);
             padding: 4px 8px;
@@ -104,9 +105,21 @@ foreach (range(0, 20) as $t) {
     Php Timeline is a small utility to manipulate and display arrays of weighted date intervals..
 </p>
 <a href="https://github.com/vctls/php-timeline">https://github.com/vctls/php-timeline</a>
-<p>Overlapping intervals with a total rate reaching higher than 100%.</p>
+<h2>How it works</h2>
+<p>
+    Here are three overlapping date intervals. Each one has a linked rate, displayed as a percentage when hovering it.
+    <br>They are all displayed over the same period of time, which has no rate.
+</p>
+<div style="margin-bottom: 2px"><?= $overlapped1 ?></div>
+<div style="margin-bottom: 2px"><?= $overlapped2 ?></div>
+<div style="margin-bottom: 2px"><?= $overlapped3 ?></div>
+
+<p>
+    Gathered on the same timeline, they are displayed as follows.
+</p>
 <?= $overlapped ?>
 
+<h2>More examples</h2>
 <p>
     Overlapping intervals with a couple null intervals.<br>
     The first null interval overlaps a non null one.
@@ -126,7 +139,8 @@ foreach (range(0, 20) as $t) {
 </p>
 
 <p>
-    A timeline with three isolated dates, of which one goes beyond all intervals.
+    A timeline with three isolated dates, shown as black bars.
+    <br>One of the dates goes beyond all intervals.
 <?= $withDates ?>
 </p>
 <p>A bunch of random timelines.</p>

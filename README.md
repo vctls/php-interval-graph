@@ -1,4 +1,4 @@
-# php-timeline
+# php-timeline [![Build Status](https://travis-ci.org/vctls/php-timeline.svg?branch=master)](https://travis-ci.org/vctls/php-timeline)
 
 A small utility to manipulate and display arrays of weighted date intervals.
 

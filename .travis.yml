@@ -1,6 +1,6 @@
 language: php
 php:
-  - nightly
+  - 7
 
 before_script:
   - composer update

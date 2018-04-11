@@ -5,9 +5,22 @@
  */
 class Timeline
 {
+    /** @var array Initial intervals */
+    protected $intervals;
+
+    /** @var array Processed values */
     protected $values;
 
     protected $date_format = "Y-m-d";
+
+    /** @var Closure Return a string from the initial bound value. */
+    protected $boundToStringFunction;
+
+    /** @var Closure TODO Return a numeric value from an initial interval value. */
+    protected $valueToNumericFunction;
+
+    /** @var Closure TODO Return a string value from an initial interval value. */
+    protected $valueToStringFunction;
 
     /**
      * @var array $palette An array of percentages with corresponding color codes.
@@ -84,7 +97,17 @@ class Timeline
     public function __construct($intervals, $date_format = "Y-m-d")
     {
         $this->date_format = $date_format;
-        $intervals = self::flatten($intervals);
+        self::checkFormat($intervals);
+        $this->intervals = $intervals;
+        $this->boundToStringFunction = function (DateTime $bound) {return $bound->format($this->date_format);};
+    }
+
+    /**
+     * Process intervals and store processed values.
+     */
+    public function process()
+    {
+        $intervals = self::flatten($this->intervals);
 
         // Extract weights.
         $t = array_column($intervals, 2);
@@ -130,11 +153,14 @@ class Timeline
         // Since we're using associative sorting functions, we know the keys haven't changed.
         $values = array_map(function ($k, array $i) use ($t, $intervals) {
             return [
-                $i[0],
-                $i[1],
-                !empty($t) ? (isset($t[$k]) ? (int)($t[$k] * 100) : null) : 50,
-                $intervals[$k][0],
-                $intervals[$k][1]
+                $i[0], // Interval start percentage
+                $i[1], // Interval end percentage
+                $intervals[$k][0], // Interval start initial value
+                $intervals[$k][1], // Interval end initial value
+                ($this->boundToStringFunction)($intervals[$k][0]), // Interval start string value
+                ($this->boundToStringFunction)($intervals[$k][1]), // Interval end string value
+                !empty($t) ? (isset($t[$k]) ? (int)($t[$k] * 100) : null) : 50, // TODO Interval numeric value
+                // TODO Interval string value
             ];
         }, array_keys($values), $values);
 
@@ -156,8 +182,6 @@ class Timeline
      */
     public static function flatten(array $intervals)
     {
-        self::checkFormat($intervals);
-
         // Extract isolated dates.
         $isolatedDates = self::extractDates($intervals);
 
@@ -430,20 +454,23 @@ class Timeline
      */
     public function draw()
     {
+        if (!isset($this->values)) {
+            $this->process();
+        }
         $vs = $this->values;
         ob_start();
         ?>
         <div class="foo" style="position: relative; width: 100%; height: 20px;
         <?= isset($this->bgColor) ? ' background-color: ' . $this->bgColor . ';' : '' ?>">
             <?php foreach ($vs as $k => $v) : ?>
-                <?php if ($v[3] === $v[4]): // Isolated date. ?>
+                <?php if ($v[2] === $v[3]): // Isolated date. ?>
                     <div class="bar bar<?= $k; ?>" style="position: absolute; height: 20px; box-sizing: content-box;
                             border-width: 0 2px 0 2px;
                             border-style: solid;
                             border-color: black;
                             left:  <?= $v[0] ?>%;
                             width: 0;"
-                         data-title="<?= $v[3]->format($this->date_format) ?>"
+                         data-title="<?= $v[4] ?>"
                     >
                     </div>
                 <?php else: ?>
@@ -451,12 +478,12 @@ class Timeline
                             left:  <?= $v[0] ?>%;
                             right: <?= 100 - $v[1] ?>%;
                             /*width: <?= $v[1] - $v[0] ?>%;*/
-                            background-color: <?= $this->getColor($v[2]) ?>"
+                            background-color: <?= $this->getColor($v[6]) ?>"
                          data-title="<?=
-                         $v[3]->format($this->date_format)
+                         $v[4]
                          . ' ➔ ' .
-                         $v[4]->format($this->date_format)
-                         . (isset($v[2]) ? ' : ' . $v[2] . '%' : '')
+                         $v[5]
+                         . (isset($v[6]) ? ' : ' . $v[6] . '%' : '')
                          ?>"
                     >
                     </div>

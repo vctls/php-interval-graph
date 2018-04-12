@@ -23,6 +23,14 @@ class Timeline
     /** @var Closure TODO Return a string value from an initial interval value. */
     protected $valueToStringFunction;
 
+    /** @var Closure Aggregate interval values. */
+    protected $aggregateFunction;
+
+    /** @var Closure Reverse aggregate interval values.
+     * TODO Can the algorithm be changed in order to discard this?
+     */
+    protected $reverseAggregateFunction;
+
     /**
      * @var array $palette An array of percentages with corresponding color codes.
      *
@@ -109,6 +117,12 @@ class Timeline
         $this->valueToStringFunction = function ($v) {
             return $v * 100 . '%';
         };
+        $this->aggregateFunction = function ($a, $b) {
+            return round($a + $b, 2);
+        };
+        $this->reverseAggregateFunction = function ($a, $b) {
+            return round($a - $b, 2);
+        };
     }
 
     /**
@@ -193,7 +207,7 @@ class Timeline
      * @param array $intervals An array of weighted date intervals, with a start date, end date and a weight from 0 to 1
      * @return array
      */
-    public static function flatten(array $intervals)
+    public function flatten(array $intervals)
     {
         // Extract isolated dates.
         $isolatedDates = self::extractDates($intervals);
@@ -220,7 +234,7 @@ class Timeline
                 // increment the active interval counter.
                 $curIntervals++;
                 // Aggregate the new value.
-                $ival = round($preVal + $curVal, 2);
+                $ival = ($this->aggregateFunction)($preVal, $curVal);
             } else {
                 // If this is an end date,
                 // decrement the counter.
@@ -230,10 +244,14 @@ class Timeline
                     $ival = null;
                 } else {
                     // Else, reverse aggregate the new value.
-                    $ival = round($preVal - $curVal, 2);
+                    $ival = ($this->reverseAggregateFunction)($preVal, $curVal);
                 }
             }
 
+            // TODO There must be a way to better handle both null and non null values at the same time.
+            // If result is 0 and next value is null,
+            // or previous result is null and current date value is null,
+            // set the value to null.
             if ($dates[$i][1] === null && $ival == 0 || $preVal === null && $curVal === null) {
                 $ival = null;
             }

@@ -26,11 +26,6 @@ class Timeline
     /** @var Closure Aggregate interval values. */
     protected $aggregateFunction;
 
-    /** @var Closure Reverse aggregate interval values.
-     * TODO Can the algorithm be changed in order to discard this?
-     */
-    protected $reverseAggregateFunction;
-
     /**
      * @var array $palette An array of percentages with corresponding color codes.
      *
@@ -118,10 +113,10 @@ class Timeline
             return $v * 100 . '%';
         };
         $this->aggregateFunction = function ($a, $b) {
+            if ($a === null && $b === null) {
+                return null;
+            }
             return round($a + $b, 2);
-        };
-        $this->reverseAggregateFunction = function ($a, $b) {
-            return round($a - $b, 2);
         };
     }
 
@@ -214,56 +209,12 @@ class Timeline
 
         $dates = self::intervalsToSignedDates($intervals);
 
-        // Order the dates.
-        usort($dates, function (array $d1, array $d2) {
-            return ($d1[0] < $d2[0]) ? -1 : 1;
-        });
-
-        $flat = [];
-        $curIntervals = 0; // Count of open intervals at given index.
-        // Create new intervals for each set of two consecutive dates,
-        // and calculate its total value.
-        for ($i = 1; $i < count($dates); $i++) {
-            // Get the value of the previous interval. This should be null for the first iteration.
-            $preVal = $i > 1 ? $flat[$i - 2][2] : null;
-            // Get the value to aggregate.
-            $curVal = $dates[$i - 1][1];
-
-            if ($dates[$i - 1][2] === '+') {
-                // If this is a start date,
-                // increment the active interval counter.
-                $curIntervals++;
-                // Aggregate the new value.
-                $ival = ($this->aggregateFunction)($preVal, $curVal);
-            } else {
-                // If this is an end date,
-                // decrement the counter.
-                $curIntervals--;
-                if ($curIntervals === 0) {
-                    // If there is no active interval, set the value to null.
-                    $ival = null;
-                } else {
-                    // Else, reverse aggregate the new value.
-                    $ival = ($this->reverseAggregateFunction)($preVal, $curVal);
-                }
-            }
-
-            // TODO There must be a way to better handle both null and non null values at the same time.
-            // If result is 0 and next value is null,
-            // or previous result is null and current date value is null,
-            // set the value to null.
-            if ($dates[$i][1] === null && $ival == 0 || $preVal === null && $curVal === null) {
-                $ival = null;
-            }
-
-            $flat[] = [$dates[$i - 1][0], $dates[$i][0], $ival];
-        }
+        $flat = $this->calcNewIntervals($dates);
 
         // Remove empty interval generated when two or more intervals share a common date.
         $flat = array_values(array_filter($flat, function ($i) {
             return $i[0] !== $i[1];
         }));
-
 
         // Push isolated dates back into the array.
         if (!empty($isolatedDates)) {
@@ -271,6 +222,56 @@ class Timeline
         }
 
         return $flat;
+    }
+
+    /**
+     * Create each new interval and calculate its value based on the active intervals on each date.
+     *
+     * @param $dates
+     * @return array
+     */
+    public function calcNewIntervals($dates)
+    {
+        // Get the values of the original intervals, including nulls.
+        $origIntVals = array_map(function ($interval) {
+            return isset($interval[2]) ? $interval[2] : null;
+        }, $this->intervals);
+
+        $newIntervals = [];
+        $activeIntervals = [];
+
+        // Create new intervals for each set of two consecutive dates,
+        // and calculate its total value.
+        for ($i = 1; $i < count($dates); $i++) {
+
+            // Set the current date.
+            $curDate = $dates[$i - 1];
+
+            if ($curDate[2] === '+') {
+                // If this is a start date,
+                // add the key of the interval to the array of active intervals.
+                $activeIntervals[$curDate[3]] = true;
+            } else {
+                // If this is an end date, remove the key.
+                unset($activeIntervals[$curDate[3]]);
+            }
+
+            if (empty($activeIntervals)) {
+                // If no intervals are active on this date,
+                // the value of this interval is null.
+                $ival = null;
+            } else {
+                // Else, aggregate the values of the corresponding intervals.
+                $ival = array_reduce(
+                    array_intersect_key($origIntVals, $activeIntervals),
+                    $this->aggregateFunction
+                );
+            }
+
+            $newIntervals[] = [$curDate[0], $dates[$i][0], $ival];
+        }
+
+        return $newIntervals;
     }
 
     /**
@@ -284,10 +285,14 @@ class Timeline
     public static function intervalsToSignedDates($intervals)
     {
         $dates = [];
-        foreach ($intervals as $interval) {
-            $dates[] = [$interval[0], isset($interval[2]) ? $interval[2] : null, '+'];
-            $dates[] = [$interval[1], isset($interval[2]) ? $interval[2] : null, '-'];
+        foreach ($intervals as $key => $interval) {
+            $dates[] = [$interval[0], isset($interval[2]) ? $interval[2] : null, '+', $key];
+            $dates[] = [$interval[1], isset($interval[2]) ? $interval[2] : null, '-', $key];
         }
+        // Order the dates.
+        usort($dates, function (array $d1, array $d2) {
+            return ($d1[0] < $d2[0]) ? -1 : 1;
+        });
         return $dates;
     }
 

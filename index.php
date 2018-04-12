@@ -47,6 +47,41 @@ $longIntervals = [
 
 $long = new Timeline($longIntervals, 'Y-m-d H:i:s');
 
+/*
+ * CUSTOM VALUE TYPES
+ */
+
+// An aggregate function for arrays representing fractions with the same denominator.
+$agg = function ($a, $b) {
+    if ($a === null && $b === null) return null;
+    return [$a[0] + $b[0], $b[1]];
+};
+
+// A toNumeric function…
+$toNumeric = function ($a) {return $a === null ? null : (int)($a[0] / $a[1] * 100);};
+
+// A toString function…
+$toString = function ($a) {return $a === null ? null : ($a[0] . '/' . $a[1]);};
+
+$fractions = [
+    [$today, new DateTime('today + 3 days'), [2, 10]],
+    [new DateTime('today + 1 day'), new DateTime('today + 4 days'), [2, 10]],
+    [new DateTime('today + 2 day'), new DateTime('today + 5 days'), [3, 10]],
+    [new DateTime('today + 3 day'), new DateTime('today + 6 days'), [5, 10]],
+    [new DateTime('today + 4 day'), new DateTime('today + 7 days'), [4, 10]],
+    [new DateTime('today + 5 day'), new DateTime('today + 8 days'), [2, 10]],
+    [new DateTime('today + 6 day'), new DateTime('today + 9 days'), [2, 10]],
+];
+$fractim = (new Timeline($fractions))->setAggregateFunction($agg)
+    ->setValueToNumericFunction($toNumeric)
+    ->setValueToStringFunction($toString);
+$fract = $fractim->draw();
+
+/* /CUSTOM VALUE TYPES */
+
+/*
+ * TRUNCATED INTERVALS
+ */
 try {
     $date1 = (clone $today)->add(new DateInterval('PT60H'));
     $date2 = (clone $today)->add(new DateInterval('PT108H'));
@@ -54,7 +89,9 @@ try {
 } catch (Exception $e) {
 }
 
-$truncated = new Timeline(Timeline::truncate($longIntervals, $date1, $date2), 'Y-m-d H:i:s');
+$truncated = $fractim
+    ->setIntervals(Timeline::truncate($fractions, $date1, $date2))
+    ->setDateFormat( 'Y-m-d H:i:s');
 
 $withDates = new Timeline([
     [$date1, $date1],
@@ -64,6 +101,7 @@ $withDates = new Timeline([
     [new DateTime('today + 2 day'), new DateTime('today + 3 days'), 3 / 10],
     [$date3, $date3],
 ]);
+/* /TRUNCATED INTERVALS */
 
 $timelines = [];
 foreach (range(0, 20) as $t) {
@@ -146,9 +184,15 @@ foreach (range(0, 20) as $t) {
 <br>
 <?= $withNullIntervals ?>
 
+
+<h2>Custom value types</h2>
 <p>
-    A timeline with lots of intervals.
-    <?= $long ?>
+    The following timeline takes arrays of two values
+    and displays them as fractions.<br>
+    In order to use custom value types, you need to set the custom functions
+    that will aggregate the values, convert them to numeric values and strings.
+</p>
+<?= $fract ?>
 
 <p>
     The same timeline, truncated between <?= $date1->format('Y-m-d H:i:s') ?>

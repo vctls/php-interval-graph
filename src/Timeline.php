@@ -1,7 +1,8 @@
 <?php
 
 /**
- * A Timeline class to manipulate and visualize arrays of dates and weighted date intervals in chronological order.
+ * A Timeline class to manipulate and visualize arrays of dates
+ * and date intervals carrying values in chronological order.
  */
 class Timeline
 {
@@ -40,7 +41,8 @@ class Timeline
     /**
      * Set the color palette for percent ranges.
      *
-     * Ranges should be simple arrays, containing only the upper bound and the corresponding color value, like this:
+     * Ranges should be simple arrays, containing only the
+     * upper bound and the corresponding color value, like this:
      *  [ 50, '#ff9431' ]
      *
      * For discrete values, simply insert the same value twice.
@@ -76,8 +78,7 @@ class Timeline
             return isset($this->bgColor) ? $this->bgColor : '';
         }
         for ($i = 0; $i < count($palette); $i++) {
-            if (
-                $i === 0 && $percent < $palette[$i][0]
+            if ($i === 0 && $percent < $palette[$i][0]
                 || $i > 0 && $palette[$i][0] === $palette[$i - 1][0] && $percent === $palette[$i][0]
                 || $i > 0 && $palette[$i][0] !== $palette[$i - 1][0] && $percent < $palette[$i][0]
                 || $i === (count($palette) - 1) && $percent > $palette[$i][0]
@@ -99,11 +100,21 @@ class Timeline
         $this->date_format = $date_format;
         self::checkFormat($intervals);
         $this->intervals = $intervals;
-        $this->boundToStringFunction = function (DateTime $bound) {return $bound->format($this->date_format);};
+        $this->boundToStringFunction = function (DateTime $bound) {
+            return $bound->format($this->date_format);
+        };
+        $this->valueToNumericFunction = function ($v) {
+            return $v;
+        };
+        $this->valueToStringFunction = function ($v) {
+            return $v * 100 . '%';
+        };
     }
 
     /**
      * Process intervals and store processed values.
+     *
+     * @return Timeline
      */
     public function process()
     {
@@ -160,7 +171,7 @@ class Timeline
                 ($this->boundToStringFunction)($intervals[$k][0]), // Interval start string value
                 ($this->boundToStringFunction)($intervals[$k][1]), // Interval end string value
                 !empty($t) ? (isset($t[$k]) ? (int)($t[$k] * 100) : null) : 50, // TODO Interval numeric value
-                // TODO Interval string value
+                !empty($t) ? (isset($t[$k]) ? (($this->valueToStringFunction)($t[$k])) : null) : null,// Interval string value
             ];
         }, array_keys($values), $values);
 
@@ -170,6 +181,8 @@ class Timeline
         });
 
         $this->values = $values;
+
+        return $this;
     }
 
 
@@ -193,37 +206,35 @@ class Timeline
         });
 
         $flat = [];
+        $curIntervals = 0; // Count of open intervals at given index.
         // Create new intervals for each set of two consecutive dates,
-        // and calculate its total weight.
+        // and calculate its total value.
         for ($i = 1; $i < count($dates); $i++) {
-            // The weight of the new interval is the sum of the value of each date before its end date.
-            $previousDates = array_slice($dates, 0, $i);
+            // Get the value of the previous interval. This should be null for the first iteration.
+            $preVal = $i > 1 ? $flat[$i - 2][2] : null;
+            // Get the value to aggregate.
+            $curVal = $dates[$i - 1][1];
 
-            // Count the number of previous '+' with non null weights.
-            $pluses = count(array_filter($previousDates, function ($date) {
-                return $date[1] !== null && $date[2] === '+';
-            }));
-
-            // Count the number of previous '-' with non null weights.
-            $minuses = count(array_filter($previousDates, function ($date) {
-                return $date[1] !== null && $date[2] === '-';
-            }));
-
-            $ival = array_reduce($previousDates,
-                function ($a, $b) {
-                    return $a + ($b[2] === '+' ? $b[1] : -$b[1]);
-                });
-
-            // TODO Find a cleaner method of preventing decimal errors.
-            $ival = round($ival, 2);
-
-            if ($pluses == $minuses) {
-                if ($ival != 0) {
-                    throw new \LogicException(
-                        "Although there are as many start and end dates, the sum of weights is different than 0:"
-                        . " $ival"
-                    );
+            if ($dates[$i - 1][2] === '+') {
+                // If this is a start date,
+                // increment the active interval counter.
+                $curIntervals++;
+                // Aggregate the new value.
+                $ival = round($preVal + $curVal, 2);
+            } else {
+                // If this is an end date,
+                // decrement the counter.
+                $curIntervals--;
+                if ($curIntervals === 0) {
+                    // If there is no active interval, set the value to null.
+                    $ival = null;
+                } else {
+                    // Else, reverse aggregate the new value.
+                    $ival = round($preVal - $curVal, 2);
                 }
+            }
+
+            if ($dates[$i][1] === null && $ival == 0 || $preVal === null && $curVal === null) {
                 $ival = null;
             }
 
@@ -409,7 +420,6 @@ class Timeline
     public static function checkFormat(array &$intervals)
     {
         foreach ($intervals as $k => $i) {
-
             if (!is_array($i)) {
                 $t = gettype($i);
                 throw new \InvalidArgumentException(
@@ -458,12 +468,11 @@ class Timeline
             $this->process();
         }
         $vs = $this->values;
-        ob_start();
-        ?>
+        ob_start(); ?>
         <div class="foo" style="position: relative; width: 100%; height: 20px;
         <?= isset($this->bgColor) ? ' background-color: ' . $this->bgColor . ';' : '' ?>">
             <?php foreach ($vs as $k => $v) : ?>
-                <?php if ($v[2] === $v[3]): // Isolated date. ?>
+                <?php if ($v[2] === $v[3]): // Isolated date.?>
                     <div class="bar bar<?= $k; ?>" style="position: absolute; height: 20px; box-sizing: content-box;
                             border-width: 0 2px 0 2px;
                             border-style: solid;
@@ -483,7 +492,7 @@ class Timeline
                          $v[4]
                          . ' ➔ ' .
                          $v[5]
-                         . (isset($v[6]) ? ' : ' . $v[6] . '%' : '')
+                         . (isset($v[7]) ? ' : ' . $v[7] : '')
                          ?>"
                     >
                     </div>

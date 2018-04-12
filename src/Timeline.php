@@ -537,4 +537,36 @@ class Timeline
     {
         return $this->draw();
     }
+
+    /**
+     * @param Closure $valueToNumericFunction
+     * @return Timeline
+     */
+    public function setValueToNumericFunction(Closure $valueToNumericFunction)
+    {
+        $this->valueToNumericFunction = $valueToNumericFunction;
+        return $this;
+    }
+
+    /**
+     * @param Closure $valueToStringFunction
+     * @return Timeline
+     */
+    public function setValueToStringFunction(Closure $valueToStringFunction)
+    {
+        $this->valueToStringFunction = $valueToStringFunction;
+        return $this;
+    }
+
+    /**
+     * @param Closure $aggregateFunction
+     * @return Timeline
+     */
+    public function setAggregateFunction(Closure $aggregateFunction)
+    {
+        $this->aggregateFunction = $aggregateFunction;
+        return $this;
+    }
+
+
 }

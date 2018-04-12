@@ -13,9 +13,10 @@ function rdm($min = 1514764800, $max = 1577750400)
     return (new DateTime)->setTimestamp(mt_rand($min, $max));
 }
 
-// TODO Display the intervals individually before each timeline.
-$base = [new DateTime('today'), new DateTime('today + 5 days')];
-$date1 = [new DateTime('today'), new DateTime('today + 4 days'), 7 / 10];
+$today = new DateTime('today');
+
+$base = [$today, new DateTime('today + 5 days')];
+$date1 = [$today, new DateTime('today + 4 days'), 7 / 10];
 $date2 = [new DateTime('today + 1 day'), new DateTime('today + 5 days'), 3 / 10];
 $date3 = [new DateTime('today + 2 day'), new DateTime('today + 3 days'), 3 / 10];
 $overlapped1 = new Timeline([$base, $date1]);
@@ -23,29 +24,19 @@ $overlapped2 = new Timeline([$base, $date2]);
 $overlapped3 = new Timeline([$base, $date3]);
 $overlapped = new Timeline([$base, $date1, $date2, $date3]);
 
-$withNull1 = new Timeline(
-    [$base, [new DateTime('today'), new DateTime('today + 3 days'), 4 / 10],]
-);
-$withNull2 = new Timeline(
-    [$base, [new DateTime('today + 1 day'), new DateTime('today + 2 days')],]
-);
-$withNull3 = new Timeline(
-    [$base, [new DateTime('today + 2 day'), new DateTime('today + 3 days'), 4 / 10],]
-);
-$withNull4 = new Timeline(
-    [$base, [new DateTime('today + 4 day'), new DateTime('today + 5 days'), 5 / 10],]
-);
-$withNullIntervals = new Timeline(
-    [
-        [new DateTime('today'), new DateTime('today + 3 days'), 4 / 10],
-        [new DateTime('today + 1 day'), new DateTime('today + 2 days')],
-        [new DateTime('today + 2 day'), new DateTime('today + 3 days'), 4 / 10],
-        [new DateTime('today + 4 day'), new DateTime('today + 5 days'), 5 / 10],
-    ]
-);
+$withNull1 = new Timeline([$base, [new DateTime('today'), new DateTime('today + 3 days'), 4 / 10],]);
+$withNull2 = new Timeline([$base, [new DateTime('today + 1 day'), new DateTime('today + 2 days')],]);
+$withNull3 = new Timeline([$base, [new DateTime('today + 2 day'), new DateTime('today + 3 days'), 4 / 10],]);
+$withNull4 = new Timeline([$base, [new DateTime('today + 4 day'), new DateTime('today + 5 days'), 5 / 10],]);
+$withNullIntervals = new Timeline([
+    [$today, new DateTime('today + 3 days'), 4 / 10],
+    [new DateTime('today + 1 day'), new DateTime('today + 2 days')],
+    [new DateTime('today + 2 day'), new DateTime('today + 3 days'), 4 / 10],
+    [new DateTime('today + 4 day'), new DateTime('today + 5 days'), 5 / 10],
+]);
 
 $longIntervals = [
-    [new DateTime('today'), new DateTime('today + 3 days'), 2 / 10],
+    [$today, new DateTime('today + 3 days'), 2 / 10],
     [new DateTime('today + 1 day'), new DateTime('today + 4 days'), 2 / 10],
     [new DateTime('today + 2 day'), new DateTime('today + 5 days'), 3 / 10],
     [new DateTime('today + 3 day'), new DateTime('today + 6 days'), 5 / 10],
@@ -55,21 +46,19 @@ $longIntervals = [
 ];
 
 $long = new Timeline($longIntervals, 'Y-m-d H:i:s');
-$today = new DateTime('today');
-$date1 = (clone $today)->add(new DateInterval('PT60H'));
-$date2 = (clone $today)->add(new DateInterval('PT108H'));
-$date3 = (clone $date2)->add(new DateInterval('PT60H'));
 
-$truncated = new Timeline(Timeline::truncate(
-    $longIntervals,
-    $date1,
-    $date2
-), 'Y-m-d H:i:s');
+try {
+    $date1 = (clone $today)->add(new DateInterval('PT60H'));
+    $date2 = (clone $today)->add(new DateInterval('PT108H'));
+    $date3 = (clone $date2)->add(new DateInterval('PT60H'));
+} catch (Exception $e) {
+}
 
+$truncated = new Timeline(Timeline::truncate($longIntervals, $date1, $date2), 'Y-m-d H:i:s');
 
 $withDates = new Timeline([
     [$date1, $date1],
-    [new DateTime('today'), new DateTime('today + 4 days'), 7 / 10],
+    [$today, new DateTime('today + 4 days'), 7 / 10],
     [$date2, $date2],
     [new DateTime('today + 1 day'), new DateTime('today + 5 days'), 3 / 10],
     [new DateTime('today + 2 day'), new DateTime('today + 3 days'), 3 / 10],
@@ -116,7 +105,7 @@ foreach (range(0, 20) as $t) {
         }
     </style>
 </head>
-<body style="font-family: sans-serif">
+<body style="font-family: sans-serif;">
 <header>
     <h1>Php Timeline demo</h1>
 </header>

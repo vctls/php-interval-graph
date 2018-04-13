@@ -14,16 +14,16 @@ class Timeline
 
     protected $date_format = "Y-m-d";
 
-    /** @var Closure Return a string from the initial bound value. */
+    /** @var \Closure Return a string from the initial bound value. */
     protected $boundToStringFunction;
 
-    /** @var Closure Return a numeric value from an initial interval value. */
+    /** @var \Closure Return a numeric value from an initial interval value. */
     protected $valueToNumericFunction;
 
-    /** @var Closure Return a string value from an initial interval value. */
+    /** @var \Closure Return a string value from an initial interval value. */
     protected $valueToStringFunction;
 
-    /** @var Closure Aggregate interval values. */
+    /** @var \Closure Aggregate interval values. */
     protected $aggregateFunction;
 
     /**
@@ -48,12 +48,13 @@ class Timeline
      * with a start date, end date and a weight from 0 to 1
      * @param string $date_format The output date format.
      */
-    public function __construct($intervals, $date_format = "Y-m-d")
+    public function __construct($intervals = null, $date_format = "Y-m-d")
     {
         $this->date_format = $date_format;
-        self::checkFormat($intervals);
-        $this->intervals = $intervals;
-        $this->boundToStringFunction = function (DateTime $bound) {
+        if (isset($intervals)) {
+            $this->setIntervals($intervals);
+        }
+        $this->boundToStringFunction = function (\DateTime $bound) {
             return $bound->format($this->date_format);
         };
         $this->valueToNumericFunction = function ($v) {
@@ -320,11 +321,10 @@ class Timeline
      */
     public function process()
     {
-        $intervals = self::flatten($this->intervals);
+        $intervals = $this->getFlatIntervals();
 
         // Extract weights.
         $t = array_column($intervals, 2);
-
 
         // Change dates to timestamps.
         $values = array_map(function (array $i) {
@@ -391,15 +391,14 @@ class Timeline
      * Transform an array of weighted date intervals with possible overlapping
      * into an array of adjacent weighted intervals with no overlapping.
      *
-     * @param array $intervals An array of weighted date intervals, with a start date, end date and a weight from 0 to 1
      * @return array
      */
-    public function flatten(array $intervals)
+    public function getFlatIntervals()
     {
         // Extract isolated dates.
-        $isolatedDates = self::extractDates($intervals);
+        $isolatedDates = self::extractDates($this->intervals);
 
-        $dates = self::intervalsToSignedDates($intervals);
+        $dates = self::intervalsToSignedDates($this->intervals);
 
         $flat = $this->calcNewIntervals($dates);
 
@@ -537,10 +536,10 @@ class Timeline
      * Define the function to convert the interval values to a numeric value
      * in order to match them to a color on the palette.
      *
-     * @param Closure $valueToNumericFunction
+     * @param \Closure $valueToNumericFunction
      * @return Timeline
      */
-    public function setValueToNumericFunction(Closure $valueToNumericFunction)
+    public function setValueToNumericFunction(\Closure $valueToNumericFunction)
     {
         $this->valueToNumericFunction = $valueToNumericFunction;
         return $this;
@@ -550,10 +549,10 @@ class Timeline
      * Define the  function to convert the interval values to strings
      * in order to display them in the view.
      *
-     * @param Closure $valueToStringFunction
+     * @param \Closure $valueToStringFunction
      * @return Timeline
      */
-    public function setValueToStringFunction(Closure $valueToStringFunction)
+    public function setValueToStringFunction(\Closure $valueToStringFunction)
     {
         $this->valueToStringFunction = $valueToStringFunction;
         return $this;
@@ -562,10 +561,10 @@ class Timeline
     /**
      * Define the function to aggregate interval values.
      *
-     * @param Closure $aggregateFunction
+     * @param \Closure $aggregateFunction
      * @return Timeline
      */
-    public function setAggregateFunction(Closure $aggregateFunction)
+    public function setAggregateFunction(\Closure $aggregateFunction)
     {
         $this->aggregateFunction = $aggregateFunction;
         return $this;

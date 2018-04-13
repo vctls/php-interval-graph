@@ -117,31 +117,7 @@ foreach (range(0, 20) as $t) {
 <html>
 <head>
     <title>Php Timeline demo</title>
-    <style>
-        .bar:hover {
-            border: thin solid black;
-            box-sizing: border-box;
-        }
-
-        /* TODO Prevent the popup from going out of the screen. */
-        .bar:hover:after {
-            content: attr(data-title);
-            padding: 4px 8px;
-            color: #333;
-            font-family: sans-serif;
-            font-size: small;
-            background: whitesmoke;
-            position: absolute;
-            left: 0;
-            top: 23px;
-            white-space: nowrap;
-            z-index: 20;
-            border-radius: 5px;
-            -moz-box-shadow: 0 0 4px #222;
-            -webkit-box-shadow: 0 0 4px #222;
-            box-shadow: 0 0 4px #222;
-        }
-    </style>
+    <link rel="stylesheet" href="styles.css">
 </head>
 <body style="font-family: sans-serif;">
 <header>

@@ -1,0 +1,47 @@
+/* Graph container */
+.foo {
+    position: relative;
+    width: 100%;
+    height: 20px;
+}
+.bar:hover {
+    border: thin solid black;
+    box-sizing: border-box;
+}
+
+/* Single dates */
+.foo .bar-date {
+    position: absolute;
+    height: 20px;
+    box-sizing: content-box;
+    border-width: 0 2px 0 2px;
+    border-style: solid;
+    border-color: black;
+    width: 0;
+}
+
+/* Intervals */
+.foo .bar-intv {
+    position: absolute;
+    height: 20px;
+}
+
+/* Popup */
+/* TODO Prevent the popup from going out of the screen. */
+.bar:hover:after {
+    content: attr(data-title);
+    padding: 4px 8px;
+    color: #333;
+    font-family: sans-serif;
+    font-size: small;
+    background: whitesmoke;
+    position: absolute;
+    left: 0;
+    top: 23px;
+    white-space: nowrap;
+    z-index: 20;
+    border-radius: 5px;
+    -moz-box-shadow: 0 0 4px #222;
+    -webkit-box-shadow: 0 0 4px #222;
+    box-shadow: 0 0 4px #222;
+}

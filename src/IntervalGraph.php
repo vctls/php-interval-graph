@@ -1,10 +1,10 @@
 <?php
 
 /**
- * A Timeline class to manipulate and visualize arrays of dates
+ * A IntervalGraph class to manipulate and visualize arrays of dates
  * and date intervals carrying values in chronological order.
  */
-class Timeline
+class IntervalGraph
 {
     /** @var array Initial intervals */
     protected $intervals;
@@ -13,6 +13,8 @@ class Timeline
     protected $values;
 
     protected $date_format = "Y-m-d";
+
+    protected $template = 'template.php';
 
     /** @var Closure Return a string from the initial bound value. */
     protected $boundToStringFunction;
@@ -226,7 +228,7 @@ class Timeline
      * For discrete values, simply insert the same value twice.
      *
      * @param array $palette
-     * @return Timeline
+     * @return IntervalGraph
      */
     public function setPalette(array $palette)
     {
@@ -247,7 +249,7 @@ class Timeline
      * Sets the date format used in the data-title attribute of the timeline HTML.
      *
      * @param $format
-     * @return Timeline
+     * @return IntervalGraph
      */
     public function setDateFormat($format)
     {
@@ -276,38 +278,8 @@ class Timeline
             $this->process();
         }
         $vs = $this->values;
-        ob_start(); ?>
-        <div class="foo" style="position: relative; width: 100%; height: 20px;
-        <?= isset($this->bgColor) ? ' background-color: ' . $this->bgColor . ';' : '' ?>">
-            <?php foreach ($vs as $k => $v) : ?>
-                <?php if ($v[2] === $v[3]): // Isolated date.?>
-                    <div class="bar bar<?= $k; ?>" style="position: absolute; height: 20px; box-sizing: content-box;
-                            border-width: 0 2px 0 2px;
-                            border-style: solid;
-                            border-color: black;
-                            left:  <?= $v[0] ?>%;
-                            width: 0;"
-                         data-title="<?= $v[4] ?>"
-                    >
-                    </div>
-                <?php else: ?>
-                    <div class="bar bar<?= $k; ?>" style="position: absolute; height: 20px;
-                            left:  <?= $v[0] ?>%;
-                            right: <?= 100 - $v[1] ?>%;
-                            /*width: <?= $v[1] - $v[0] ?>%;*/
-                            background-color: <?= $this->getColor($v[6]) ?>"
-                         data-title="<?=
-                         $v[4]
-                         . ' ➔ ' .
-                         $v[5]
-                         . (isset($v[7]) ? ' : ' . $v[7] : '')
-                         ?>"
-                    >
-                    </div>
-                <?php endif; ?>
-            <?php endforeach; ?>
-        </div>
-        <?php
+        ob_start();
+        include $this->template;
         $html = ob_get_contents();
         ob_clean();
         return $html;
@@ -316,7 +288,7 @@ class Timeline
     /**
      * Process intervals and store processed values.
      *
-     * @return Timeline
+     * @return IntervalGraph
      */
     public function process()
     {
@@ -538,7 +510,7 @@ class Timeline
      * in order to match them to a color on the palette.
      *
      * @param Closure $valueToNumericFunction
-     * @return Timeline
+     * @return IntervalGraph
      */
     public function setValueToNumericFunction(Closure $valueToNumericFunction)
     {
@@ -551,7 +523,7 @@ class Timeline
      * in order to display them in the view.
      *
      * @param Closure $valueToStringFunction
-     * @return Timeline
+     * @return IntervalGraph
      */
     public function setValueToStringFunction(Closure $valueToStringFunction)
     {
@@ -563,7 +535,7 @@ class Timeline
      * Define the function to aggregate interval values.
      *
      * @param Closure $aggregateFunction
-     * @return Timeline
+     * @return IntervalGraph
      */
     public function setAggregateFunction(Closure $aggregateFunction)
     {
@@ -578,7 +550,7 @@ class Timeline
      * the processed values will be deleted.
      *
      * @param array $intervals
-     * @return Timeline
+     * @return IntervalGraph
      */
     public function setIntervals(array $intervals)
     {

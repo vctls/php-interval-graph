@@ -19,15 +19,15 @@ class TimelineTest extends \PHPUnit\Framework\TestCase
             [new DateTime('today + 6 day'), new DateTime('today + 9 days'), 2 / 10],
         ];
 
-        $long = new Timeline($longIntervals, 'Y-m-d H:i:s');
-        $this->assertTrue($long instanceof Timeline, 'A timeline could not be created.');
+        $long = new IntervalGraph($longIntervals, 'Y-m-d H:i:s');
+        $this->assertTrue($long instanceof IntervalGraph, 'A timeline could not be created.');
     }
 
     public function testCheck()
     {
         $this->expectException(InvalidArgumentException::class);
         $badArgument = ['something something'];
-        Timeline::checkFormat($badArgument);
+        IntervalGraph::checkFormat($badArgument);
     }
 
     // TODO Do some actual tests.

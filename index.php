@@ -19,16 +19,16 @@ $base = [$today, new DateTime('today + 5 days')];
 $date1 = [$today, new DateTime('today + 4 days'), 7 / 10];
 $date2 = [new DateTime('today + 1 day'), new DateTime('today + 5 days'), 3 / 10];
 $date3 = [new DateTime('today + 2 day'), new DateTime('today + 3 days'), 3 / 10];
-$overlapped1 = new Timeline([$base, $date1]);
-$overlapped2 = new Timeline([$base, $date2]);
-$overlapped3 = new Timeline([$base, $date3]);
-$overlapped = new Timeline([$base, $date1, $date2, $date3]);
+$overlapped1 = new IntervalGraph([$base, $date1]);
+$overlapped2 = new IntervalGraph([$base, $date2]);
+$overlapped3 = new IntervalGraph([$base, $date3]);
+$overlapped = new IntervalGraph([$base, $date1, $date2, $date3]);
 
-$withNull1 = new Timeline([$base, [new DateTime('today'), new DateTime('today + 3 days'), 4 / 10],]);
-$withNull2 = new Timeline([$base, [new DateTime('today + 1 day'), new DateTime('today + 2 days')],]);
-$withNull3 = new Timeline([$base, [new DateTime('today + 2 day'), new DateTime('today + 3 days'), 4 / 10],]);
-$withNull4 = new Timeline([$base, [new DateTime('today + 4 day'), new DateTime('today + 5 days'), 5 / 10],]);
-$withNullIntervals = new Timeline([
+$withNull1 = new IntervalGraph([$base, [new DateTime('today'), new DateTime('today + 3 days'), 4 / 10],]);
+$withNull2 = new IntervalGraph([$base, [new DateTime('today + 1 day'), new DateTime('today + 2 days')],]);
+$withNull3 = new IntervalGraph([$base, [new DateTime('today + 2 day'), new DateTime('today + 3 days'), 4 / 10],]);
+$withNull4 = new IntervalGraph([$base, [new DateTime('today + 4 day'), new DateTime('today + 5 days'), 5 / 10],]);
+$withNullIntervals = new IntervalGraph([
     [$today, new DateTime('today + 3 days'), 4 / 10],
     [new DateTime('today + 1 day'), new DateTime('today + 2 days')],
     [new DateTime('today + 2 day'), new DateTime('today + 3 days'), 4 / 10],
@@ -45,7 +45,7 @@ $longIntervals = [
     [new DateTime('today + 6 day'), new DateTime('today + 9 days'), 2 / 10],
 ];
 
-$long = new Timeline($longIntervals, 'Y-m-d H:i:s');
+$long = new IntervalGraph($longIntervals, 'Y-m-d H:i:s');
 
 /*
  * CUSTOM VALUE TYPES
@@ -72,7 +72,7 @@ $fractions = [
     [new DateTime('today + 5 day'), new DateTime('today + 8 days'), [2, 10]],
     [new DateTime('today + 6 day'), new DateTime('today + 9 days'), [2, 10]],
 ];
-$fractim = (new Timeline($fractions))->setAggregateFunction($agg)
+$fractim = (new IntervalGraph($fractions))->setAggregateFunction($agg)
     ->setValueToNumericFunction($toNumeric)
     ->setValueToStringFunction($toString);
 $fract = $fractim->draw();
@@ -90,10 +90,10 @@ try {
 }
 
 $truncated = $fractim
-    ->setIntervals(Timeline::truncate($fractions, $date1, $date2))
+    ->setIntervals(IntervalGraph::truncate($fractions, $date1, $date2))
     ->setDateFormat( 'Y-m-d H:i:s');
 
-$withDates = new Timeline([
+$withDates = new IntervalGraph([
     [$date1, $date1],
     [$today, new DateTime('today + 4 days'), 7 / 10],
     [$date2, $date2],
@@ -103,20 +103,20 @@ $withDates = new Timeline([
 ]);
 /* /TRUNCATED INTERVALS */
 
-$timelines = [];
+$intvGraphs = [];
 foreach (range(0, 20) as $t) {
     $intervals = [];
     $j = (int)rand(3, 6);
     for ($i = 0; $i < $j; $i++) {
         $intervals[] = [rdm(), rdm(), rand(1, 9) / 10];
     }
-    $timelines[] = new Timeline($intervals);
+    $intvGraphs[] = new IntervalGraph($intervals);
 }
 
 ?>
 <html>
 <head>
-    <title>Php Timeline demo</title>
+    <title>Php IntervalGraph demo</title>
     <style>
         .bar:hover {
             border: thin solid black;
@@ -145,14 +145,14 @@ foreach (range(0, 20) as $t) {
 </head>
 <body style="font-family: sans-serif;">
 <header>
-    <h1>Php Timeline demo</h1>
+    <h1>PHP Interval Graph demo</h1>
 </header>
 <p>
-    Php Timeline is a small utility to manipulate and
-    display arrays of weighted date intervals..
+    PHP Interval Graph is a small utility to manipulate and
+    display arrays of intervals.
 </p>
-<a href="https://github.com/vctls/php-timeline">
-    https://github.com/vctls/php-timeline
+<a href="https://github.com/vctls/php-interval-graph">
+    https://github.com/vctls/php-interval-graph
 </a>
 <h2>How it works</h2>
 <p>
@@ -165,7 +165,7 @@ foreach (range(0, 20) as $t) {
 <div style="margin-bottom: 2px"><?= $overlapped3 ?></div>
 
 <p>
-    Gathered on the same timeline, they are displayed as follows.
+    Gathered on the same graph, they are displayed as follows.
 </p>
 <?= $overlapped ?>
 
@@ -187,7 +187,7 @@ foreach (range(0, 20) as $t) {
 
 <h2>Custom value types</h2>
 <p>
-    The following timeline takes arrays of two values
+    The following graph takes arrays of two values
     and displays them as fractions.<br>
     In order to use custom value types, you need to set the custom functions
     that will aggregate the values, convert them to numeric values and strings.
@@ -195,19 +195,19 @@ foreach (range(0, 20) as $t) {
 <?= $fract ?>
 
 <p>
-    The same timeline, truncated between <?= $date1->format('Y-m-d H:i:s') ?>
+    The same graph, truncated between <?= $date1->format('Y-m-d H:i:s') ?>
     and <?= $date2->format('Y-m-d H:i:s') ?>.
     <?= $truncated ?>
 </p>
 
 <p>
-    A timeline with three isolated dates, shown as black bars.
+    A graph with three isolated dates, shown as black bars.
     <br>One of the dates goes beyond all intervals.
     <?= $withDates ?>
 </p>
-<p>A bunch of random timelines.</p>
-<?php foreach ($timelines as $timeline): ?>
-    <?= $timeline ?>
+<p>A bunch of random graphs.</p>
+<?php foreach ($intvGraphs as $graph): ?>
+    <?= $graph ?>
 <?php endforeach; ?>
 <br>
 </body>

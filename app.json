@@ -1,6 +1,6 @@
 {
-  "name": "PHP Timeline",
-  "description": "A small utility to manipulate and display periods of date intervals",
-  "repository": "https://github.com/vctls/php-timeline.git",
+  "name": "PHP Interval Graph",
+  "description": "A small utility to manipulate and display arrays of intervals",
+  "repository": "https://github.com/vctls/php-interval-graph.git",
   "addons": []
 }

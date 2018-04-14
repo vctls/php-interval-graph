@@ -1,6 +1,6 @@
 {
-    "name": "vctls/php-timeline",
-    "description": "A small utility to manipulate and display arrays of weighted date intervals.",
+    "name": "vctls/php-interval-graph",
+    "description": "A small utility to manipulate and display arrays of weighted intervals.",
     "type": "library",
     "license": "MIT",
     "authors": [

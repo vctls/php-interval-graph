@@ -5,8 +5,8 @@ A small utility to manipulate and display arrays of weighted intervals.
 It transforms an array of disjointed and overlapping weighted intervals
 into an array of adjacent intervals with their total calculated weight.
 
-Useful for displaying availability rates and such over a period of time in a basic, compatible way.
+It can be used to display availability rates and such over a period of time in a basic, compatible way.
 
-
+Check index.php for examples.
 
 Demo : https://php-interval-graph-demo.herokuapp.com/

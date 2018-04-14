@@ -14,9 +14,9 @@
         "php": ">=5.6"
     },
     "autoload": {
-        "psr-4": { "" : "src/" }
+        "psr-4": { "Vctls\\IntervalGraph\\" : "src/" }
     },
     "autoload-dev": {
-        "psr-4": { "": "test/" }
+        "psr-4": { "Vctls\\IntervalGraph\\Test\\": "test/" }
     }
 }

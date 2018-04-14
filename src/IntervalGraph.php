@@ -1,5 +1,7 @@
 <?php
 
+namespace Vctls\IntervalGraph;
+
 /**
  * A IntervalGraph class to manipulate and visualize arrays of dates
  * and date intervals carrying values in chronological order.
@@ -12,76 +14,74 @@ class IntervalGraph
     /** @var array Processed values */
     protected $values;
 
-    protected $date_format = "Y-m-d";
-
+    /** @var string Path to the template used for rendering. */
     protected $template = 'template.php';
 
-    /** @var Closure Return a string from the initial bound value. */
+    /** @var \Closure Return a numeric value from the inital bound value. */
+    protected $boundToNumericFunction;
+
+    /** @var \Closure Return a string from the initial bound value. */
     protected $boundToStringFunction;
 
-    /** @var Closure Return a numeric value from an initial interval value. */
+    /** @var \Closure Return a numeric value from an initial interval value. */
     protected $valueToNumericFunction;
 
-    /** @var Closure Return a string value from an initial interval value. */
+    /** @var \Closure Return a string value from an initial interval value. */
     protected $valueToStringFunction;
 
-    /** @var Closure Aggregate interval values. */
+    /** @var \Closure Aggregate interval values. */
     protected $aggregateFunction;
 
-    /**
-     * @var array $palette An array of percentages with corresponding color codes.
-     *
-     */
-    protected $palette = [
-        [0, '#ff5450'],
-        [0, '#ff5450'],
-        [50, '#ff9431'],
-        [100, '#d7e174'],
-        [100, '#5cb781'],
-        [100, '#557ebf'],
-    ];
-
-    protected $bgColor = '#e1e0eb';
+    /** @var Palette */
+    protected $palette;
 
     /**
-     * Create an IntervalGraph from weighed intervals.
+     * Create an IntervalGraph from intervals carrying values.
      *
-     * @param array[] $intervals An array of weighted date intervals,
-     * with a start date, end date and a weight from 0 to 1
-     * @param string $date_format The output date format.
+     * @param array[] $intervals An array of intervals,
+     * with a low bound, high bound and a value.
      */
-    public function __construct($intervals, $date_format = "Y-m-d")
+    public function __construct($intervals)
     {
-        $this->date_format = $date_format;
         self::checkFormat($intervals);
         $this->intervals = $intervals;
-        $this->boundToStringFunction = function (DateTime $bound) {
-            return $bound->format($this->date_format);
+
+        $this->boundToStringFunction = function (\DateTime $bound) {
+            return $bound->format("Y-m-d");
         };
+
+        $this->boundToNumericFunction = function (\DateTime $bound) {
+            return $bound->getTimestamp();
+        };
+
         $this->valueToNumericFunction = function ($v) {
             return $v === null ? null : (int)($v * 100);
         };
+
         $this->valueToStringFunction = function ($v) {
             return $v === null ? null : ($v * 100 . '%');
         };
+
         $this->aggregateFunction = function ($a, $b) {
             if ($a === null && $b === null) {
                 return null;
             }
             return round($a + $b, 2);
         };
+
+        $this->palette = new Palette();
     }
 
     /**
      * Check that an array of intervals is correctly formatted.
      *
-     * The first element must be the start date.
+     * The first element must be the low bound.
      *
-     * The second element must be the end date.
+     * The second element must be the high bound.
      *
-     * The third element must be the weight. It must be numeric or null.
+     * The third element must be the value.
      *
-     * Inverted end and start dates will be put back in chronological order.
+     * Inverted end and low bounds will be put back in chronological order.
      *
      * @param array &$intervals
      */
@@ -109,7 +109,7 @@ class IntervalGraph
                 );
             }
 
-            // Ensure start and end dates are in the right order.
+            // Ensure start and high bounds are in the right order.
             if ($i[0] > $i [1]) {
                 $a = $i[0];
                 $intervals[$k][0] = $i[1];
@@ -119,12 +119,12 @@ class IntervalGraph
     }
 
     /**
-     * Truncate all intervals to the given start and end dates.
+     * Truncate all intervals to the given start and high bounds.
      *
      * @param array $intervals
      * @param \DateTime $start
      * @param \DateTime $end
-     * @param bool $padding Add null weighted intervals between the bounds and the first and last date.
+     * @param bool $padding Add null value intervals between the bounds and the first and last date.
      * @return array
      */
     public static function truncate(array $intervals, \DateTime $start = null, \DateTime $end = null, $padding = false)
@@ -134,12 +134,12 @@ class IntervalGraph
 
         if (isset($start)) {
             $intervals = array_map(function ($i) use ($start) {
-                if ($i[0] < $start) { // If the start date is before the lower bound...
+                if ($i[0] < $start) { // If the low bound is before the lower bound...
                     if ($i[1] < $start) {
-                        // ... and the end date is also before the lower bound, set the interval to false.
+                        // ... and the high bound is also before the lower bound, set the interval to false.
                         $i = false;
                     } else {
-                        // If only the start date is before the lower bound, set it to the bound value.
+                        // If only the low bound is before the lower bound, set it to the bound value.
                         $i[0] = $start;
                     }
                 }
@@ -167,7 +167,7 @@ class IntervalGraph
                         // If both dates are after the given upper bound, set the interval to false.
                         $i = false;
                     } else {
-                        // If only the end date is after the upper bound, set it to the bound value.
+                        // If only the high bound is after the upper bound, set it to the bound value.
                         $i[1] = $end;
                     }
                 }
@@ -219,45 +219,6 @@ class IntervalGraph
     }
 
     /**
-     * Set the color palette for percent ranges.
-     *
-     * Ranges should be simple arrays, containing only the
-     * upper bound and the corresponding color value, like this:
-     *  [ 50, '#ff9431' ]
-     *
-     * For discrete values, simply insert the same value twice.
-     *
-     * @param array $palette
-     * @return IntervalGraph
-     */
-    public function setPalette(array $palette)
-    {
-        usort($palette, function ($p1, $p2) {
-            return $p2[0] - $p1[0];
-        });
-        $this->palette = $palette;
-        return $this;
-    }
-
-    public function setBGColor($color)
-    {
-        $this->bgColor = $color;
-        return $this;
-    }
-
-    /**
-     * Sets the date format used in the data-title attribute of the intervalGraph HTML.
-     *
-     * @param $format
-     * @return IntervalGraph
-     */
-    public function setDateFormat($format)
-    {
-        $this->date_format = $format;
-        return $this;
-    }
-
-    /**
      * Render an HTML view of the intervalGraph.
      *
      * @return string
@@ -300,16 +261,18 @@ class IntervalGraph
     {
         $intervals = self::flatten($this->intervals);
 
-        // Extract weights.
+        // Extract values.
         $t = array_column($intervals, 2);
 
-
-        // Change dates to timestamps.
+        // Change bounds to numeric values.
         $values = array_map(function (array $i) {
-            return [$i[0]->getTimestamp(), $i[1]->getTimeStamp()];
+            return [
+                ($this->boundToNumericFunction)($i[0]),
+                ($this->boundToNumericFunction)($i[1]),
+            ];
         }, $intervals);
 
-        // Order by start date.
+        // Order by low bound.
         uasort($values, function (array $i1, array $i2) {
             return ($i1[0] < $i2[0]) ? -1 : 1;
         });
@@ -325,7 +288,7 @@ class IntervalGraph
             ];
         }, $values);
 
-        // Order by end date.
+        // Order by high bound.
         uasort($values, function (array $i1, array $i2) {
             return ($i1[1] < $i2[1]) ? -1 : 1;
         });
@@ -340,7 +303,7 @@ class IntervalGraph
             }, $i);
         }, $values);
 
-        // Put weights back in, along with the formatted date.
+        // Put values back in, along with the formatted date.
         // Since we're using associative sorting functions, we know the keys haven't changed.
         $values = array_map(function ($k, array $i) use ($t, $intervals) {
             return [
@@ -350,7 +313,7 @@ class IntervalGraph
                 $intervals[$k][1], // Interval end initial value
                 ($this->boundToStringFunction)($intervals[$k][0]), // Interval start string value
                 ($this->boundToStringFunction)($intervals[$k][1]), // Interval end string value
-                !empty($t) ? $this->getColor(isset($t[$k]) ? ($this->valueToNumericFunction)($t[$k]) : null) : 50, // Interval color
+                !empty($t) ? $this->palette->getColor(isset($t[$k]) ? ($this->valueToNumericFunction)($t[$k]) : null) : 50, // Interval color
                 !empty($t) ? (isset($t[$k]) ? ($this->valueToStringFunction)($t[$k]) : null) : null,// Interval string value
             ];
         }, array_keys($values), $values);
@@ -366,10 +329,10 @@ class IntervalGraph
     }
 
     /**
-     * Transform an array of weighted date intervals with possible overlapping
-     * into an array of adjacent weighted intervals with no overlapping.
+     * Transform an array of intervals with possible overlapping
+     * into an array of adjacent intervals with no overlapping.
      *
-     * @param array $intervals An array of weighted date intervals, with a start date, end date and a weight from 0 to 1
+     * @param array $intervals An array of intervals, with a low bound, an high bound and a value.
      * @return array
      */
     public function flatten(array $intervals)
@@ -397,7 +360,7 @@ class IntervalGraph
     /**
      * Extract isolated dates from an array of intervals.
      *
-     * Intervals with the exact same start and end date will be considered as isolated dates.
+     * Intervals with the exact same start and high bound will be considered as isolated dates.
      *
      * They will be removed from the initial array, and returned in a separate array.
      *
@@ -417,8 +380,8 @@ class IntervalGraph
 
     /**
      * Make an array of dates from an array of intervals.
-     * Assign the value of the weight to each date.
-     * Assign and a '+' sign if it is a start date, and a '-' if it is an end date.
+     * Assign the value of the interval to each date.
+     * Assign and a '+' sign if it is a low bound, and a '-' if it is an high bound.
      *
      * @param $intervals
      * @return array
@@ -461,11 +424,11 @@ class IntervalGraph
             $curDate = $dates[$i - 1];
 
             if ($curDate[2] === '+') {
-                // If this is a start date,
+                // If this is a low bound,
                 // add the key of the interval to the array of active intervals.
                 $activeIntervals[$curDate[3]] = true;
             } else {
-                // If this is an end date, remove the key.
+                // If this is an high bound, remove the key.
                 unset($activeIntervals[$curDate[3]]);
             }
 
@@ -488,37 +451,13 @@ class IntervalGraph
     }
 
     /**
-     * Get the hexadecimal color code for the given percentage.
-     *
-     * @param integer $percent
-     * @return string
-     */
-    public function getColor($percent)
-    {
-        $palette = $this->palette;
-        if ($percent === null) {
-            return isset($this->bgColor) ? $this->bgColor : '';
-        }
-        for ($i = 0; $i < count($palette); $i++) {
-            if ($i === 0 && $percent < $palette[$i][0]
-                || $i > 0 && $palette[$i][0] === $palette[$i - 1][0] && $percent === $palette[$i][0]
-                || $i > 0 && $palette[$i][0] !== $palette[$i - 1][0] && $percent < $palette[$i][0]
-                || $i === (count($palette) - 1) && $percent > $palette[$i][0]
-            ) {
-                return $palette[$i][1];
-            }
-        }
-        throw new \LogicException("The percentage $percent did not match any range in the color palette.");
-    }
-
-    /**
      * Define the function to convert the interval values to a numeric value
      * in order to match them to a color on the palette.
      *
-     * @param Closure $valueToNumericFunction
+     * @param \Closure $valueToNumericFunction
      * @return IntervalGraph
      */
-    public function setValueToNumericFunction(Closure $valueToNumericFunction)
+    public function setValueToNumericFunction(\Closure $valueToNumericFunction)
     {
         $this->valueToNumericFunction = $valueToNumericFunction;
         return $this;
@@ -528,10 +467,10 @@ class IntervalGraph
      * Define the  function to convert the interval values to strings
      * in order to display them in the view.
      *
-     * @param Closure $valueToStringFunction
+     * @param \Closure $valueToStringFunction
      * @return IntervalGraph
      */
-    public function setValueToStringFunction(Closure $valueToStringFunction)
+    public function setValueToStringFunction(\Closure $valueToStringFunction)
     {
         $this->valueToStringFunction = $valueToStringFunction;
         return $this;
@@ -540,10 +479,10 @@ class IntervalGraph
     /**
      * Define the function to aggregate interval values.
      *
-     * @param Closure $aggregateFunction
+     * @param \Closure $aggregateFunction
      * @return IntervalGraph
      */
-    public function setAggregateFunction(Closure $aggregateFunction)
+    public function setAggregateFunction(\Closure $aggregateFunction)
     {
         $this->aggregateFunction = $aggregateFunction;
         return $this;
@@ -581,7 +520,7 @@ class IntervalGraph
     /**
      * Set the function to convert interval bound values to string.
      *
-     * @param Closure $boundToStringFunction
+     * @param \Closure $boundToStringFunction
      * @return IntervalGraph
      */
     public function setBoundToStringFunction($boundToStringFunction)
@@ -589,6 +528,5 @@ class IntervalGraph
         $this->boundToStringFunction = $boundToStringFunction;
         return $this;
     }
-
 
 }

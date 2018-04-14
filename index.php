@@ -1,6 +1,7 @@
 <?php
-
 require_once 'vendor/autoload.php';
+
+use Vctls\IntervalGraph\IntervalGraph;
 
 /**
  * Generate random dates.
@@ -45,7 +46,11 @@ $longIntervals = [
     [new DateTime('today + 6 day'), new DateTime('today + 9 days'), 2 / 10],
 ];
 
-$long = new IntervalGraph($longIntervals, 'Y-m-d H:i:s');
+$longDateFormat = function (\DateTime $bound){
+    return $bound->format('Y-m-d H:i:s');
+};
+
+$long = (new IntervalGraph($longIntervals))->setBoundToStringFunction($longDateFormat);
 
 /*
  * CUSTOM VALUE TYPES
@@ -89,9 +94,8 @@ try {
 } catch (Exception $e) {
 }
 
-$truncated = $fractim
-    ->setIntervals(IntervalGraph::truncate($fractions, $date1, $date2))
-    ->setDateFormat( 'Y-m-d H:i:s');
+$truncated = ($fractim->setIntervals(IntervalGraph::truncate($fractions, $date1, $date2)))
+    ->setBoundToStringFunction($longDateFormat);
 
 $withDates = new IntervalGraph([
     [$date1, $date1],

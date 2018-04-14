@@ -489,6 +489,26 @@ class IntervalGraph
     }
 
     /**
+     * Set the function to convert interval bound values to string.
+     *
+     * @param \Closure $boundToStringFunction
+     * @return IntervalGraph
+     */
+    public function setBoundToStringFunction($boundToStringFunction)
+    {
+        $this->boundToStringFunction = $boundToStringFunction;
+        return $this;
+    }
+
+    /**
+     * @return array
+     */
+    public function getIntervals()
+    {
+        return $this->intervals;
+    }
+
+    /**
      * Set the intervals to be processed.
      *
      * If another set of intervals was previously processed,
@@ -506,6 +526,22 @@ class IntervalGraph
     }
 
     /**
+     * @return array
+     */
+    public function getValues()
+    {
+        return $this->values;
+    }
+
+    /**
+     * @return string
+     */
+    public function getTemplate()
+    {
+        return $this->template;
+    }
+
+    /**
      * Set the PHP template to use for rendering.
      *
      * @param string $template
@@ -518,14 +554,30 @@ class IntervalGraph
     }
 
     /**
-     * Set the function to convert interval bound values to string.
-     *
-     * @param \Closure $boundToStringFunction
+     * @return Palette
+     */
+    public function getPalette()
+    {
+        return $this->palette;
+    }
+
+    /**
+     * @param Palette $palette
      * @return IntervalGraph
      */
-    public function setBoundToStringFunction($boundToStringFunction)
+    public function setPalette($palette)
     {
-        $this->boundToStringFunction = $boundToStringFunction;
+        $this->palette = $palette;
+        return $this;
+    }
+
+    /**
+     * @param \Closure $boundToNumericFunction
+     * @return IntervalGraph
+     */
+    public function setBoundToNumericFunction($boundToNumericFunction)
+    {
+        $this->boundToNumericFunction = $boundToNumericFunction;
         return $this;
     }
 

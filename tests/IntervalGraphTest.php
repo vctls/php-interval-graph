@@ -23,7 +23,7 @@ class IntervalGraphTest extends \PHPUnit\Framework\TestCase
             [new \DateTime('today + 6 day'), new \DateTime('today + 9 days'), 2 / 10],
         ];
 
-        $long = new IntervalGraph($longIntervals, 'Y-m-d H:i:s');
+        $long = new IntervalGraph($longIntervals);
         $this->assertTrue($long instanceof IntervalGraph, 'A intervalGraph could not be created.');
     }
 

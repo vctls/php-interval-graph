@@ -5,7 +5,7 @@
  * Time: 19:27
  */
 
-class TimelineTest extends \PHPUnit\Framework\TestCase
+class IntervalGraphTest extends \PHPUnit\Framework\TestCase
 {
     public function testDraw()
     {
@@ -20,12 +20,12 @@ class TimelineTest extends \PHPUnit\Framework\TestCase
         ];
 
         $long = new IntervalGraph($longIntervals, 'Y-m-d H:i:s');
-        $this->assertTrue($long instanceof IntervalGraph, 'A timeline could not be created.');
+        $this->assertTrue($long instanceof IntervalGraph, 'A intervalGraph could not be created.');
     }
 
     public function testCheck()
     {
-        $this->expectException(InvalidArgumentException::class);
+        $this->expectException(\InvalidArgumentException::class);
         $badArgument = ['something something'];
         IntervalGraph::checkFormat($badArgument);
     }

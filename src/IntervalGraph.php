@@ -44,7 +44,7 @@ class IntervalGraph
     protected $bgColor = '#e1e0eb';
 
     /**
-     * Create a timeline from weighed intervals.
+     * Create an IntervalGraph from weighed intervals.
      *
      * @param array[] $intervals An array of weighted date intervals,
      * with a start date, end date and a weight from 0 to 1
@@ -246,7 +246,7 @@ class IntervalGraph
     }
 
     /**
-     * Sets the date format used in the data-title attribute of the timeline HTML.
+     * Sets the date format used in the data-title attribute of the intervalGraph HTML.
      *
      * @param $format
      * @return IntervalGraph
@@ -258,7 +258,7 @@ class IntervalGraph
     }
 
     /**
-     * Render an HTML view of the timeline.
+     * Render an HTML view of the intervalGraph.
      *
      * @return string
      */
@@ -268,7 +268,7 @@ class IntervalGraph
     }
 
     /**
-     * Render an HTML view of the timeline.
+     * Render an HTML view of the intervalGraph.
      *
      * @return string
      */
@@ -559,4 +559,30 @@ class IntervalGraph
         $this->values = null;
         return $this;
     }
+
+    /**
+     * Set the PHP template to use for rendering.
+     *
+     * @param string $template
+     * @return IntervalGraph
+     */
+    public function setTemplate($template)
+    {
+        $this->template = $template;
+        return $this;
+    }
+
+    /**
+     * Set the function to convert interval bound values to string.
+     *
+     * @param Closure $boundToStringFunction
+     * @return IntervalGraph
+     */
+    public function setBoundToStringFunction($boundToStringFunction)
+    {
+        $this->boundToStringFunction = $boundToStringFunction;
+        return $this;
+    }
+
+
 }

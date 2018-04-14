@@ -264,7 +264,12 @@ class IntervalGraph
      */
     public function __toString()
     {
-        return $this->draw();
+        try {
+            $html = $this->draw();
+        } catch (\Exception $e) {
+            $html = "Error : " . $e->getMessage();
+        }
+        return $html;
     }
 
     /**
@@ -280,8 +285,9 @@ class IntervalGraph
         $vs = $this->values;
         ob_start();
         include $this->template;
-        $html = ob_get_contents();
-        ob_clean();
+        $html = ob_get_clean();
+        // Remove all surplus whitespace.
+        $html = preg_replace(['/(?<=>)\s+/', '/\s+(?=<)/', '/\s+/'], ['', '', ' '], $html);
         return $html;
     }
 
@@ -344,7 +350,7 @@ class IntervalGraph
                 $intervals[$k][1], // Interval end initial value
                 ($this->boundToStringFunction)($intervals[$k][0]), // Interval start string value
                 ($this->boundToStringFunction)($intervals[$k][1]), // Interval end string value
-                !empty($t) ? (isset($t[$k]) ? ($this->valueToNumericFunction)($t[$k]) : null) : 50, // Interval numeric value
+                !empty($t) ? $this->getColor(isset($t[$k]) ? ($this->valueToNumericFunction)($t[$k]) : null) : 50, // Interval color
                 !empty($t) ? (isset($t[$k]) ? ($this->valueToStringFunction)($t[$k]) : null) : null,// Interval string value
             ];
         }, array_keys($values), $values);

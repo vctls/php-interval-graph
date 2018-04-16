@@ -10,4 +10,12 @@
             </div>
         <?php endif; ?>
     <?php endforeach; ?>
+    <div class="bar" style="pointer-events: none; width: 100%; height:50%; position: absolute; top: 50%;
+    background: repeating-linear-gradient(
+    to right,
+    transparent ,
+    transparent <?= 5 * $s ?>%,
+    #000000 <?= 5 * $s ?>%,
+    #000000 <?= 5 * $s + 0.2 ?>%
+  );"></div>
 </div>

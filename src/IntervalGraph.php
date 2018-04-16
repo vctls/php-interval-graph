@@ -243,6 +243,7 @@ class IntervalGraph
         if (!isset($this->values)) {
             $this->process();
         }
+        $s = 1;
         $vs = $this->values;
         ob_start();
         include $this->template;

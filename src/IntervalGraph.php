@@ -360,16 +360,21 @@ class IntervalGraph
     /**
      * Extract isolated dates from an array of intervals.
      *
-     * Intervals with the exact same start and high bound will be considered as isolated dates.
+     * Intervals with the exact same start and end date will be considered as isolated dates.
+     *
+     * They will be removed from the initial array, and returned in a separate array.
      *
      * @param array $intervals The initial array.
      * @return array An array containing only isolated dates.
      */
-    public static function extractDates(array $intervals)
+    public static function extractDates(array &$intervals)
     {
         $dates = array_filter($intervals, function ($interval) {
             return $interval[0] === $interval[1];
         });
+
+        $intervals = array_diff_key($intervals, $dates);
+
         return $dates;
     }
 

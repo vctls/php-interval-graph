@@ -3,8 +3,7 @@
 namespace Vctls\IntervalGraph;
 
 /**
- * A IntervalGraph class to manipulate and visualize arrays of dates
- * and date intervals carrying values in chronological order.
+ * A class to manipulate and display arrays of weighted intervals.
  */
 class IntervalGraph
 {
@@ -41,10 +40,11 @@ class IntervalGraph
      * @param array[] $intervals An array of intervals,
      * with a low bound, high bound and a value.
      */
-    public function __construct($intervals)
+    public function __construct($intervals = null)
     {
-        self::checkFormat($intervals);
-        $this->intervals = $intervals;
+        if (isset($intervals)) {
+            $this->setIntervals($intervals);
+        }
 
         $this->boundToStringFunction = function (\DateTime $bound) {
             return $bound->format("Y-m-d");
@@ -259,7 +259,7 @@ class IntervalGraph
      */
     public function process()
     {
-        $intervals = self::flatten($this->intervals);
+        $intervals = $this->getFlatIntervals();
 
         // Extract values.
         $t = array_column($intervals, 2);
@@ -332,15 +332,14 @@ class IntervalGraph
      * Transform an array of intervals with possible overlapping
      * into an array of adjacent intervals with no overlapping.
      *
-     * @param array $intervals An array of intervals, with a low bound, an high bound and a value.
      * @return array
      */
-    public function flatten(array $intervals)
+    public function getFlatIntervals()
     {
         // Extract isolated dates.
-        $isolatedDates = self::extractDates($intervals);
+        $isolatedDates = self::extractDates($this->intervals);
 
-        $dates = self::intervalsToSignedDates($intervals);
+        $dates = self::intervalsToSignedDates($this->intervals);
 
         $flat = $this->calcNewIntervals($dates);
 
@@ -362,19 +361,14 @@ class IntervalGraph
      *
      * Intervals with the exact same start and high bound will be considered as isolated dates.
      *
-     * They will be removed from the initial array, and returned in a separate array.
-     *
      * @param array $intervals The initial array.
      * @return array An array containing only isolated dates.
      */
-    public static function extractDates(array &$intervals)
+    public static function extractDates(array $intervals)
     {
         $dates = array_filter($intervals, function ($interval) {
             return $interval[0] === $interval[1];
         });
-
-        $intervals = array_diff_key($intervals, $dates);
-
         return $dates;
     }
 

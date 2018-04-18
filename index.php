@@ -96,6 +96,7 @@ try {
 
 $truncated = ($fractim->setIntervals(IntervalGraph::truncate($fractions, $date1, $date2)))
     ->setBoundToStringFunction($longDateFormat);
+/* /TRUNCATED INTERVALS */
 
 $withDates = new IntervalGraph([
     [$date1, $date1],
@@ -105,7 +106,6 @@ $withDates = new IntervalGraph([
     [new DateTime('today + 2 day'), new DateTime('today + 3 days'), 3 / 10],
     [$date3, $date3],
 ]);
-/* /TRUNCATED INTERVALS */
 
 $intvGraphs = [];
 foreach (range(0, 20) as $t) {
@@ -122,6 +122,7 @@ foreach (range(0, 20) as $t) {
 <head>
     <title>Php IntervalGraph demo</title>
     <link rel="stylesheet" href="styles.css">
+    <script type="application/javascript" src="app.js"></script>
 </head>
 <body style="font-family: sans-serif;">
 <header>
@@ -185,10 +186,24 @@ foreach (range(0, 20) as $t) {
     <br>One of the dates goes beyond all intervals.
     <?= $withDates ?>
 </p>
-<p>A bunch of random graphs.</p>
-<?php foreach ($intvGraphs as $graph): ?>
-    <?= $graph ?>
-<?php endforeach; ?>
-<br>
+<p>
+    A bunch of random graphs, this time generated through JavaScript:
+    <br>
+</p>
+<div id="random"></div>
+<script>
+    'use strict';
+    const graphs = JSON.parse('<?= json_encode($intvGraphs) ?>');
+    const el = document.getElementById('random');
+
+    try {
+        graphs.forEach(function (graph) {
+            let html = document.createRange().createContextualFragment(intvg(graph));
+            el.appendChild(html);
+        });
+    } catch (e) {
+        el.innerHTML = 'The JavaScript function uses ES6 string literals. Sorry not sorry, IE.';
+    }
+</script>
 </body>
 </html>

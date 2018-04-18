@@ -5,7 +5,7 @@ namespace Vctls\IntervalGraph;
 /**
  * A class to manipulate and display arrays of weighted intervals.
  */
-class IntervalGraph
+class IntervalGraph implements \JsonSerializable
 {
     /** @var array Initial intervals */
     protected $intervals;
@@ -307,21 +307,30 @@ class IntervalGraph
         // Put values back in, along with the formatted date.
         // Since we're using associative sorting functions, we know the keys haven't changed.
         $values = array_map(function ($k, array $i) use ($t, $intervals) {
-            return [
-                $i[0], // Interval start percentage
-                $i[1], // Interval end percentage
-                $intervals[$k][0], // Interval start initial value
-                $intervals[$k][1], // Interval end initial value
-                ($this->boundToStringFunction)($intervals[$k][0]), // Interval start string value
-                ($this->boundToStringFunction)($intervals[$k][1]), // Interval end string value
-                !empty($t) ? $this->palette->getColor(isset($t[$k]) ? ($this->valueToNumericFunction)($t[$k]) : null) : 50, // Interval color
-                !empty($t) ? (isset($t[$k]) ? ($this->valueToStringFunction)($t[$k]) : null) : null,// Interval string value
-            ];
+            if ($intervals[$k][0] === $intervals[$k][1]) {
+                return [
+                    $i[0], // Single value position percentage
+                    ($this->boundToStringFunction)($intervals[$k][0]), // Signle value string
+                ];
+            } else {
+                return [
+                    $i[0], // Interval start percentage
+                    100 - $i[1], // Interval end percentage from right
+                    // Note: for some reason, using 'widht' instead of 'right'
+                    // causes the right border to be hidden underneath the next interval.
+                    !empty($t) ? $this->palette->getColor(
+                        isset($t[$k]) ? ($this->valueToNumericFunction)($t[$k]) : null
+                    ) : 50, // Interval color
+                    ($this->boundToStringFunction)($intervals[$k][0]), // Interval start string value
+                    ($this->boundToStringFunction)($intervals[$k][1]), // Interval end string value
+                    !empty($t) ? (isset($t[$k]) ? ($this->valueToStringFunction)($t[$k]) : null) : null,// Interval string value
+                ];
+            }
         }, array_keys($values), $values);
 
         // Put isolated dates at the end.
         uasort($values, function ($i) {
-            return $i[0] === $i[1] ? 1 : -1;
+            return count($i) === 2 ?  1 : -1;
         });
 
         $this->values = $values;
@@ -581,4 +590,16 @@ class IntervalGraph
         return $this;
     }
 
+    /**
+     * Return the array of values to be serialized by json_encode.
+     *
+     * @return array
+     */
+    public function jsonSerialize()
+    {
+        if (!isset($this->values)) {
+            $this->process();
+        }
+        return $this->values;
+    }
 }

@@ -327,7 +327,9 @@ class IntervalGraph implements \JsonSerializable
             }
         }, array_keys($values), $values);
 
-        // Put isolated dates at the end.
+        // Put isolated dates at the end and reset indices.
+        // Reseting indices ensures the processed values are
+        // serialized as correctly ordered JSON arrays.
         usort($values, function ($i) {
             return count($i) === 2 ?  1 : -1;
         });

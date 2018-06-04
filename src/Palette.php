@@ -17,6 +17,12 @@ class Palette
     /**
      * @var array $palette An array of percentages with corresponding color codes.
      *
+     * In order to keep a simple array, the pairs are defined following these rules:
+     * Pairs are sorted by value in ascending order.
+     * The first pair defines the color for all lower values.
+     * The last pair defines the color for all higher values.
+     * When two pairs with the same value are consecutive, the second pair defines
+     * the color of this discrete value.
      */
     protected $palette = [
         [0, '#ff5450'],

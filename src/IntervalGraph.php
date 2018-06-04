@@ -149,8 +149,8 @@ class IntervalGraph implements \JsonSerializable
             // Remove false elements.
             $intervals = array_filter($intervals);
 
-            // If padding is required and a lower bound is set and inferior to the min date,
-            // add a wightless interval between that date and the bound.
+            // If padding is required and a lower bound is set and is inferior to the min date,
+            // add a weightless interval between that date and the bound.
             if ($padding) {
                 $minDate = self::minDate($intervals);
                 if ($minDate > $start) {
@@ -177,8 +177,8 @@ class IntervalGraph implements \JsonSerializable
             // Remove false elements.
             $intervals = array_filter($intervals);
 
-            // If padding is required and a higher bound is set and superior to the max date,
-            // add a wightless interval between that date and the bound.
+            // If padding is required and a higher bound is set and is superior to the max date,
+            // add a weightless interval between that date and the bound.
             if ($padding) {
                 $maxDate = self::maxDate($intervals);
                 if ($maxDate < $end) {

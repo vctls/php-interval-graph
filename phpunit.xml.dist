@@ -5,6 +5,14 @@
             <directory suffix="Test.php">./tests</directory>
         </testsuite>
     </testsuites>
+    <filter>
+        <whitelist processUncoveredFilesFromWhitelist="true">
+            <directory suffix=".php">./src</directory>
+            <exclude>
+                <file>./src/template.php</file>
+            </exclude>
+        </whitelist>
+    </filter>
     <logging>
         <log type="junit" target="/tmp/logfile.xml"/>
         <log type="coverage-clover" target="/tmp/coverage.xml"/>

@@ -4,3 +4,10 @@ php:
 
 before_script:
   - composer update
+
+addons:
+  sonarcloud:
+    organization: "vctls-github"
+
+script:
+  - sonar-scanner

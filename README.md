@@ -1,4 +1,5 @@
-# PHP Interval Graph [![Build Status](https://travis-ci.org/vctls/php-interval-graph.svg?branch=master)](https://travis-ci.org/vctls/php-interval-graph)
+# PHP Interval Graph
+[![Build Status](https://travis-ci.org/vctls/php-interval-graph.svg?branch=master)](https://travis-ci.org/vctls/php-interval-graph) [![Quality Gate](https://sonarcloud.io/api/project_badges/measure?project=php-interval-graph&metric=alert_status)](https://sonarcloud.io/dashboard?id=php-interval-graph) [![Coverage](https://sonarcloud.io/api/project_badges/measure?project=php-interval-graph&metric=coverage)](https://sonarcloud.io/dashboard?id=php-interval-graph)
 
 A small utility to manipulate and display arrays of weighted intervals.
 

@@ -10,4 +10,5 @@ addons:
     organization: "vctls-github"
 
 script:
+  - phpunit
   - sonar-scanner

@@ -356,7 +356,8 @@ class IntervalGraph implements \JsonSerializable
 
         // Remove empty interval generated when two or more intervals share a common date.
         $flat = array_values(array_filter($flat, function ($i) {
-            return $i[0] !== $i[1];
+            // Use weak comparison.
+            return $i[0] != $i[1];
         }));
 
         // Push isolated dates back into the array.

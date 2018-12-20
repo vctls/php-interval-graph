@@ -1,9 +1,4 @@
 <?php
-/**
- * User: Victor
- * Date: 2018-04-14
- * Time: 13:31
- */
 
 namespace Vctls\IntervalGraph;
 

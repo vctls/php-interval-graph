@@ -153,7 +153,7 @@ class IntervalGraph implements \JsonSerializable
             // add a weightless interval between that date and the bound.
             if ($padding) {
                 $minDate = self::minDate($intervals);
-                if ($minDate > $start) {
+                if (isset($minDate) && $minDate > $start) {
                     $intervals[] = [$start, $minDate];
                 }
             }
@@ -181,7 +181,7 @@ class IntervalGraph implements \JsonSerializable
             // add a weightless interval between that date and the bound.
             if ($padding) {
                 $maxDate = self::maxDate($intervals);
-                if ($maxDate < $end) {
+                if (isset($maxDate) && $maxDate < $end) {
                     $intervals[] = [$end, $maxDate];
                 }
             }

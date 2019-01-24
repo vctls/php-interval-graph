@@ -1,0 +1,5 @@
+Require all denied
+
+<FilesMatch "^(index\.php|app\.js|styles\.css)$">
+  Require all granted
+</FilesMatch>

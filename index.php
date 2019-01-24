@@ -50,7 +50,7 @@ $longDateFormat = function (\DateTime $bound){
     return $bound->format('Y-m-d H:i:s');
 };
 
-$long = (new IntervalGraph($longIntervals))->setBoundToStringFunction($longDateFormat);
+$long = (new IntervalGraph($longIntervals))->setBoundToString($longDateFormat);
 
 /*
  * CUSTOM VALUE TYPES
@@ -77,9 +77,9 @@ $fractions = [
     [new DateTime('today + 5 day'), new DateTime('today + 8 days'), [2, 10]],
     [new DateTime('today + 6 day'), new DateTime('today + 9 days'), [2, 10]],
 ];
-$fractim = (new IntervalGraph($fractions))->setAggregateFunction($agg)
-    ->setValueToNumericFunction($toNumeric)
-    ->setValueToStringFunction($toString);
+$fractim = (new IntervalGraph($fractions))->setAggregate($agg)
+    ->setValueToNumeric($toNumeric)
+    ->setValueToString($toString);
 $fract = $fractim->draw();
 
 /* /CUSTOM VALUE TYPES */
@@ -95,7 +95,7 @@ try {
 }
 
 $truncated = ($fractim->setIntervals(IntervalGraph::truncate($fractions, $date1, $date2)))
-    ->setBoundToStringFunction($longDateFormat);
+    ->setBoundToString($longDateFormat);
 /* /TRUNCATED INTERVALS */
 
 $withDates = new IntervalGraph([
@@ -114,11 +114,12 @@ foreach (range(0, 20) as $t) {
     for ($i = 0; $i < $j; $i++) {
         $intervals[] = [rdm(), rdm(), rand(1, 9) / 10];
     }
-    $intvGraphs[] = new IntervalGraph($intervals);
+    $intvGraphs[] = (new IntervalGraph($intervals))->checkIntervals();
 }
 
 ?>
-<html>
+<!doctype html>
+<html lang="en">
 <head>
     <title>Php IntervalGraph demo</title>
     <link rel="stylesheet" href="styles.css">

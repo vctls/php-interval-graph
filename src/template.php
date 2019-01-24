@@ -9,4 +9,5 @@
             </div>
         <?php endif; ?>
     <?php endforeach; ?>
+    <div class="bar" style="pointer-events: none; width: 100%; height:50%; position: absolute; top: 50%;"></div>
 </div>

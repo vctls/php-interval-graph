@@ -1,9 +1,4 @@
 <?php
-/**
- * User: Victor
- * Date: 2018-04-06
- * Time: 19:27
- */
 
 namespace Vctls\IntervalGraph\Test;
 
@@ -20,15 +15,63 @@ class IntervalGraphTest extends \PHPUnit\Framework\TestCase
      */
     public function testCreate()
     {
-        $intervals = [
-            [new \DateTime('today'), new \DateTime('today + 5 days')],
-            [new \DateTime('today + 1 day'), new \DateTime('today + 3 days'), 2 / 10],
-            [new \DateTime('today + 2 day'), new \DateTime('today + 4 days'), 3 / 10],
+        $longIntervals = [
+            [new \DateTime('today'), new \DateTime('today + 3 days'), 2 / 10],
+            [new \DateTime('today + 1 day'), new \DateTime('today + 4 days'), 2 / 10],
+            [new \DateTime('today + 2 day'), new \DateTime('today + 5 days'), 3 / 10],
+            [new \DateTime('today + 3 day'), new \DateTime('today + 6 days'), 5 / 10],
+            [new \DateTime('today + 4 day'), new \DateTime('today + 7 days'), 4 / 10],
+            [new \DateTime('today + 5 day'), new \DateTime('today + 8 days'), 2 / 10],
+            [new \DateTime('today + 6 day'), new \DateTime('today + 9 days'), 2 / 10],
         ];
 
-        $intervalGraph = new IntervalGraph($intervals);
-        $this->assertTrue($intervalGraph instanceof IntervalGraph, 'A intervalGraph could not be created.');
+        $intervalGraph = new IntervalGraph($longIntervals);
+        $this->assertTrue($intervalGraph instanceof IntervalGraph, 'An IntervalGraph could not be created.');
     }
+
+    /**
+     * Test calculation of values from simple numeric intervals.
+     * TODO Separate calculation of values and visual information.
+     *
+     * @throws \Exception
+     */
+    public function testSimpleIntegerSumIntervals()
+    {
+        $intervals = [
+            [0, 2, 1],
+            [1, 3, 1]
+        ];
+
+        $intervalGraph = (new IntervalGraph($intervals))
+            ->setBoundToNumeric(function (int $bound) {
+                return $bound;
+            })
+            ->setBoundToString(function (int $bound) {
+                return (string)$bound;
+            })
+            ->setValueToNumeric(function (int $value){
+                return $value;
+            })
+            ->setValueToString(function (int $value){
+                return (string)$value;
+            })
+            ->setAggregate(function ($a, $b) {
+                return $a + $b;
+            })
+        ;
+
+        $values = $intervalGraph->process()->checkIntervals()->getValues();
+
+        $expected = [
+            [0,67,"#ff9431","0","1","1"],
+            [33,33,"#ff9431","1","2","2"],
+            [67,0,"#ff9431","2","3","1"]
+        ];
+
+        $this->assertEquals($expected, $values, "Generated values don't match the expected result.");
+
+    }
+
     /**
      * @throws \Exception
      */
@@ -49,12 +92,20 @@ class IntervalGraphTest extends \PHPUnit\Framework\TestCase
         $this->assertEquals(4, $flat[2][2]);
     }
 
+    /**
+     * Test the `checkIntervals()` method.
+     * It MUST throw an InvalidArgumentException if the intervals are incorrect.
+     * It MUST NOT throw any exception if the intervals are correct.
+     */
     public function testCheck()
     {
+        // Naive test.
         $this->expectException(\InvalidArgumentException::class);
         $badArgument = ['something something'];
-        IntervalGraph::checkFormat($badArgument);
+        $intervalGraph = new IntervalGraph($badArgument);
+        $intervalGraph->checkIntervals();
+        
+        // TODO Check that bounds and values are compatible with the given conversion closures.
     }
-
-    // TODO Do some actual tests.
+    
 }

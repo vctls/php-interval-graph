@@ -17,16 +17,16 @@ class IntervalGraph implements \JsonSerializable
     protected $template = 'template.php';
 
     /** @var \Closure Return a numeric value from the inital bound value. */
-    protected $boundToNumericFunction;
+    protected $boundToNumeric;
 
     /** @var \Closure Return a string from the initial bound value. */
-    protected $boundToStringFunction;
+    protected $boundToString;
 
     /** @var \Closure Return a numeric value from an initial interval value. */
-    protected $valueToNumericFunction;
+    protected $valueToNumeric;
 
     /** @var \Closure Return a string value from an initial interval value. */
-    protected $valueToStringFunction;
+    protected $valueToString;
 
     /** @var \Closure Aggregate interval values. */
     protected $aggregateFunction;
@@ -46,19 +46,19 @@ class IntervalGraph implements \JsonSerializable
             $this->setIntervals($intervals);
         }
 
-        $this->boundToStringFunction = function (\DateTime $bound) {
-            return $bound->format("Y-m-d");
-        };
-
-        $this->boundToNumericFunction = function (\DateTime $bound) {
+        $this->boundToNumeric = function (\DateTime $bound) {
             return $bound->getTimestamp();
         };
 
-        $this->valueToNumericFunction = function ($v) {
+        $this->boundToString = function (\DateTime $bound) {
+            return $bound->format("Y-m-d");
+        };
+
+        $this->valueToNumeric = function ($v) {
             return $v === null ? null : (int)($v * 100);
         };
 
-        $this->valueToStringFunction = function ($v) {
+        $this->valueToString = function ($v) {
             return $v === null ? null : ($v * 100 . '%');
         };
 
@@ -82,65 +82,92 @@ class IntervalGraph implements \JsonSerializable
      * The third element must be the value.
      *
      * Inverted end and low bounds will be put back in chronological order.
-     *
-     * @param array &$intervals
+     * 
+     * @return $this
      */
-    public static function checkFormat(array &$intervals)
+    public function checkIntervals()
     {
-        foreach ($intervals as $k => $i) {
-            if (!is_array($i)) {
-                $t = gettype($i);
+        
+        if (!isset($intervals)) {
+            $intervals = $this->intervals;
+        }
+        
+        foreach ($intervals as $intervalKey => $interval) {
+
+            // Check that the interval is an array.
+            if (!is_array($interval)) {
+                $t = gettype($interval);
                 throw new \InvalidArgumentException(
                     "Each element of the '\$intervals' array should be an array, $t given."
                 );
             }
 
-            if (!$i[0] instanceof \DateTime) {
-                $t = gettype($i[0]);
-                throw new \InvalidArgumentException(
-                    "The first element of an interval array should be an instance of DateTime, $t given."
-                );
-            }
+            // Check that the bounds and value of the interval can be converted to both a numeric
+            // and string value with the given closures.
+            foreach ([['Lower bound', 'bound'], ['Higher bound', 'bound'], ['Value', 'value']] as $index => $property) {
+                
+                // Skip value property of valueless intervals.
+                if ($property[1] === 'value' && !isset($interval[$index])) {
+                    continue;
+                }
+                
+                foreach (['numeric', 'string'] as $expectedType) {
+                    
+                    $expectedTypeTitle = ucfirst($expectedType);
+                    
+                    try {
+                        $value = ($this->{"$property[1]To$expectedTypeTitle"})($interval[$index]);
+                    } catch (\Exception $exception) {
+                        throw new \InvalidArgumentException(
+                            "$property[0] of interval $intervalKey cannot be converted to a $expectedType value " .
+                            "with the given '$property[1]To$expectedTypeTitle' function. Error : " . $exception->getMessage()
+                        );
+                    }
 
-            if (!$i[1] instanceof \DateTime) {
-                $t = gettype($i[1]);
-                throw new \InvalidArgumentException(
-                    "The second element of an interval array should be an instance of DateTime, $t given."
-                );
+                    $actualType = gettype($value);
+
+                    if (!call_user_func("is_$expectedType", $value)) {
+                        throw new \InvalidArgumentException(
+                            "$property[0] of interval $intervalKey is not converted to a $expectedType value " .
+                            "by the given '$property[1]To$expectedTypeTitle' function. Returned type : $actualType"
+                        );
+                    }
+                }
             }
 
             // Ensure start and high bounds are in the right order.
-            if ($i[0] > $i [1]) {
-                $a = $i[0];
-                $intervals[$k][0] = $i[1];
-                $intervals[$k][1] = $a;
+            if ($interval[0] > $interval [1]) {
+                $a = $interval[0];
+                $intervals[$intervalKey][0] = $interval[1];
+                $intervals[$intervalKey][1] = $a;
             }
         }
+
+        // TODO Check that the values can be aggregated with the given closure.
+        
+        return $this;
     }
 
     /**
-     * Truncate all intervals to the given start and high bounds.
+     * Truncate all intervals to the given lower and upper limits.
      *
      * @param array $intervals
-     * @param \DateTime $start
-     * @param \DateTime $end
-     * @param bool $padding Add null value intervals between the bounds and the first and last date.
+     * @param mixed $lowerLimit
+     * @param mixed $upperLimit
+     * @param bool $padding Add null value intervals between the bounds and the first and last bounds.
      * @return array
      */
-    public static function truncate(array $intervals, \DateTime $start = null, \DateTime $end = null, $padding = false)
+    public static function truncate(array $intervals, $lowerLimit = null, $upperLimit = null, $padding = false)
     {
-        // Ensure the $intervals array is well formatted.
-        self::checkFormat($intervals);
-
-        if (isset($start)) {
-            $intervals = array_map(function ($i) use ($start) {
-                if ($i[0] < $start) { // If the low bound is before the lower bound...
-                    if ($i[1] < $start) {
+        if (isset($lowerLimit)) {
+            $intervals = array_map(function ($i) use ($lowerLimit) {
+                if ($i[0] < $lowerLimit) { // If the low bound is before the lower bound...
+                    if ($i[1] < $lowerLimit) {
                         // ... and the high bound is also before the lower bound, set the interval to false.
                         $i = false;
                     } else {
                         // If only the low bound is before the lower bound, set it to the bound value.
-                        $i[0] = $start;
+                        $i[0] = $lowerLimit;
                     }
                 }
                 return $i;
@@ -149,26 +176,26 @@ class IntervalGraph implements \JsonSerializable
             // Remove false elements.
             $intervals = array_filter($intervals);
 
-            // If padding is required and a lower bound is set and is inferior to the min date,
-            // add a weightless interval between that date and the bound.
+            // If padding is required and a lower limit is set and is inferior to the min bound,
+            // add a weightless interval between that bound and the limit.
             if ($padding) {
-                $minDate = self::minDate($intervals);
-                if (isset($minDate) && $minDate > $start) {
-                    $intervals[] = [$start, $minDate];
+                $minBound = self::minBound($intervals);
+                if (isset($minBound) && $minBound > $lowerLimit) {
+                    $intervals[] = [$lowerLimit, $minBound];
                 }
             }
         }
 
         // TODO DRY
-        if (isset($end)) {
-            $intervals = array_map(function ($i) use ($end) {
-                if ($i[1] > $end) {
-                    if ($i[0] > $end) {
-                        // If both dates are after the given upper bound, set the interval to false.
+        if (isset($upperLimit)) {
+            $intervals = array_map(function ($i) use ($upperLimit) {
+                if ($i[1] > $upperLimit) {
+                    if ($i[0] > $upperLimit) {
+                        // If both bounds are after the given upper limit, set the interval to false.
                         $i = false;
                     } else {
-                        // If only the high bound is after the upper bound, set it to the bound value.
-                        $i[1] = $end;
+                        // If only the high bound is after the upper limit, set it to the bound value.
+                        $i[1] = $upperLimit;
                     }
                 }
                 return $i;
@@ -177,12 +204,12 @@ class IntervalGraph implements \JsonSerializable
             // Remove false elements.
             $intervals = array_filter($intervals);
 
-            // If padding is required and a higher bound is set and is superior to the max date,
-            // add a weightless interval between that date and the bound.
+            // If padding is required and a upper limit is set and is superior to the max bound,
+            // add a valueless interval between that bound and the limit.
             if ($padding) {
-                $maxDate = self::maxDate($intervals);
-                if (isset($maxDate) && $maxDate < $end) {
-                    $intervals[] = [$end, $maxDate];
+                $maxBound = self::maxBound($intervals);
+                if (isset($maxBound) && $maxBound < $upperLimit) {
+                    $intervals[] = [$upperLimit, $maxBound];
                 }
             }
         }
@@ -191,31 +218,29 @@ class IntervalGraph implements \JsonSerializable
     }
 
     /**
-     * Get the minimum date in an array of intervals.
+     * Get the minimum bound in an array of intervals.
      *
      * @param $intervals
-     * @return \DateTime
+     * @return mixed
      */
-    public static function minDate($intervals)
+    public static function minBound($intervals)
     {
-        self::checkFormat($intervals);
-        $dates = array_column($intervals, 0);
-        sort($dates);
-        return array_shift($dates);
+        $bounds = array_column($intervals, 0);
+        sort($bounds);
+        return array_shift($bounds);
     }
 
     /**
-     * Get the maximum date in an array of intervals.
+     * Get the maximum bound in an array of intervals.
      *
      * @param $intervals
-     * @return \DateTime
+     * @return mixed
      */
-    public static function maxDate($intervals)
+    public static function maxBound($intervals)
     {
-        self::checkFormat($intervals);
-        $dates = array_column($intervals, 1);
-        sort($dates);
-        return array_pop($dates);
+        $bounds = array_column($intervals, 1);
+        sort($bounds);
+        return array_pop($bounds);
     }
 
     /**
@@ -259,82 +284,82 @@ class IntervalGraph implements \JsonSerializable
      */
     public function process()
     {
-        $intervals = $this->getFlatIntervals();
+        $flatIntervals = $this->getFlatIntervals();
 
         // Extract values.
-        $t = array_column($intervals, 2);
+        $t = array_column($flatIntervals, 2);
 
         // Change bounds to numeric values.
-        $values = array_map(function (array $i) {
+        $numVals = array_map(function (array $i) {
             return [
-                ($this->boundToNumericFunction)($i[0]),
-                ($this->boundToNumericFunction)($i[1]),
+                ($this->boundToNumeric)($i[0]),
+                ($this->boundToNumeric)($i[1]),
             ];
-        }, $intervals);
+        }, $flatIntervals);
 
         // Order by low bound.
-        uasort($values, function (array $i1, array $i2) {
+        uasort($numVals, function (array $i1, array $i2) {
             return ($i1[0] < $i2[0]) ? -1 : 1;
         });
 
         // Get the min timestamp.
-        $min = reset($values)[0];
+        $min = reset($numVals)[0];
 
         // Substract min from all timestamps.
-        $values = array_map(function ($i) use ($min) {
+        $numVals = array_map(function ($i) use ($min) {
             return [
                 $i[0] - $min,
                 $i[1] - $min
             ];
-        }, $values);
+        }, $numVals);
 
         // Order by high bound.
-        uasort($values, function (array $i1, array $i2) {
+        uasort($numVals, function (array $i1, array $i2) {
             return ($i1[1] < $i2[1]) ? -1 : 1;
         });
 
         // Get max timestamp.
-        $max = end($values)[1];
+        $max = end($numVals)[1];
 
         // Calculate percentages.
-        $values = array_map(function (array $i) use ($max) {
+        $numVals = array_map(function (array $i) use ($max) {
             return array_map(function ($int) use ($max) {
                 return round($int * 100 / $max);
             }, $i);
-        }, $values);
+        }, $numVals);
 
-        // Put values back in, along with the formatted date.
+        // Put values back in, along with the formatted bound.
         // Since we're using associative sorting functions, we know the keys haven't changed.
-        $values = array_map(function ($k, array $i) use ($t, $intervals) {
-            if ($intervals[$k][0] === $intervals[$k][1]) {
+        $numVals = array_map(function ($k, array $i) use ($t, $flatIntervals) {
+            if ($flatIntervals[$k][0] === $flatIntervals[$k][1]) {
                 return [
                     $i[0], // Single value position percentage
-                    ($this->boundToStringFunction)($intervals[$k][0]), // Signle value string
+                    ($this->boundToString)($flatIntervals[$k][0]), // Signle value string
                 ];
             } else {
+                $colorval = isset($t[$k]) ? ($this->valueToNumeric)($t[$k]) : null;
+                $stingval = isset($t[$k]) ? ($this->valueToString)($t[$k]) : null;
                 return [
                     $i[0], // Interval start percentage
                     100 - $i[1], // Interval end percentage from right
                     // Note: for some reason, using 'widht' instead of 'right'
                     // causes the right border to be hidden underneath the next interval.
-                    !empty($t) ? $this->palette->getColor(
-                        isset($t[$k]) ? ($this->valueToNumericFunction)($t[$k]) : null
-                    ) : 50, // Interval color
-                    ($this->boundToStringFunction)($intervals[$k][0]), // Interval start string value
-                    ($this->boundToStringFunction)($intervals[$k][1]), // Interval end string value
-                    !empty($t) ? (isset($t[$k]) ? ($this->valueToStringFunction)($t[$k]) : null) : null,// Interval string value
+                    !empty($t) ? $this->palette->getColor($colorval) : 50, // Interval color
+                    ($this->boundToString)($flatIntervals[$k][0]), // Interval start string value
+                    ($this->boundToString)($flatIntervals[$k][1]), // Interval end string value
+                    !empty($t) ? ($stingval) : null,// Interval string value
                 ];
             }
-        }, array_keys($values), $values);
+        }, array_keys($numVals), $numVals);
 
-        // Put isolated dates at the end and reset indices.
+        // Put discrete values at the end and reset indices.
         // Reseting indices ensures the processed values are
         // serialized as correctly ordered JSON arrays.
-        usort($values, function ($i) {
-            return count($i) === 2 ?  1 : -1;
+        usort($numVals, function ($i) {
+            return count($i) === 2 ? 1 : -1;
         });
 
-        $this->values = $values;
+        $this->values = $numVals;
 
         return $this;
     }
@@ -347,77 +372,76 @@ class IntervalGraph implements \JsonSerializable
      */
     public function getFlatIntervals()
     {
-        // Extract isolated dates.
-        $isolatedDates = self::extractDates($this->intervals);
+        $discreteValues = self::extractDiscreteValues($this->intervals);
+        $signedBounds = self::intervalsToSignedBounds($this->intervals);
+        $adjacentIntervals = $this->calcAdjacentIntervals($signedBounds);
 
-        $dates = self::intervalsToSignedDates($this->intervals);
-
-        $flat = $this->calcNewIntervals($dates);
-
-        // Remove empty interval generated when two or more intervals share a common date.
-        $flat = array_values(array_filter($flat, function ($i) {
-            // Use weak comparison.
+        // Remove empty interval generated when two or more intervals share a common bound.
+        $adjacentIntervals = array_values(array_filter($adjacentIntervals, function ($i) {
+            // Use weak comparison in case of object typed bounds.
             return $i[0] != $i[1];
         }));
 
-        // Push isolated dates back into the array.
-        if (!empty($isolatedDates)) {
-            array_push($flat, ...$isolatedDates);
+        // Push discrete values back into the array.
+        if (!empty($discreteValues)) {
+            array_push($adjacentIntervals, ...$discreteValues);
         }
 
-        return $flat;
+        return $adjacentIntervals;
     }
 
     /**
-     * Extract isolated dates from an array of intervals.
+     * Extract discrete values from an array of intervals.
      *
-     * Intervals with the exact same start and end date will be considered as isolated dates.
+     * Intervals with the exact same lower and higher bound will be considered as discrete values.
      *
      * They will be removed from the initial array, and returned in a separate array.
      *
      * @param array $intervals The initial array.
-     * @return array An array containing only isolated dates.
+     * @return array An array containing only discrete values.
      */
-    public static function extractDates(array &$intervals)
+    public static function extractDiscreteValues(array &$intervals)
     {
-        $dates = array_filter($intervals, function ($interval) {
+        $discreteValues = array_filter($intervals, function ($interval) {
             return $interval[0] === $interval[1];
         });
 
-        $intervals = array_diff_key($intervals, $dates);
+        $intervals = array_diff_key($intervals, $discreteValues);
 
-        return $dates;
+        return $discreteValues;
     }
 
     /**
-     * Make an array of dates from an array of intervals.
-     * Assign the value of the interval to each date.
+     * Make an array of bounds from an array of intervals.
+     * 
+     * Assign the value of the interval to each bound.
+     * 
      * Assign and a '+' sign if it is a low bound, and a '-' if it is an high bound.
      *
      * @param $intervals
      * @return array
      */
-    public static function intervalsToSignedDates($intervals)
+    public static function intervalsToSignedBounds($intervals)
     {
-        $dates = [];
+        $bounds = [];
         foreach ($intervals as $key => $interval) {
-            $dates[] = [$interval[0], isset($interval[2]) ? $interval[2] : null, '+', $key];
-            $dates[] = [$interval[1], isset($interval[2]) ? $interval[2] : null, '-', $key];
+            $bounds[] = [$interval[0], isset($interval[2]) ? $interval[2] : null, '+', $key];
+            $bounds[] = [$interval[1], isset($interval[2]) ? $interval[2] : null, '-', $key];
         }
-        // Order the dates.
-        usort($dates, function (array $d1, array $d2) {
+        // Order the bounds.
+        usort($bounds, function (array $d1, array $d2) {
             return ($d1[0] < $d2[0]) ? -1 : 1;
         });
-        return $dates;
+        return $bounds;
     }
 
     /**
-     * Create each new interval and calculate its value based on the active intervals on each date.
+     * Create each new interval and calculate its value based on the active intervals on each bound.
      *
-     * @param $dates
+     * @param $bounds
      * @return array
      */
-    public function calcNewIntervals($dates)
+    public function calcAdjacentIntervals($bounds)
     {
         // Get the values of the original intervals, including nulls.
         $origIntVals = array_map(function ($interval) {
@@ -427,24 +451,24 @@ class IntervalGraph implements \JsonSerializable
         $newIntervals = [];
         $activeIntervals = [];
 
-        // Create new intervals for each set of two consecutive dates,
+        // Create new intervals for each set of two consecutive bounds,
         // and calculate its total value.
-        for ($i = 1; $i < count($dates); $i++) {
+        for ($i = 1; $i < count($bounds); $i++) {
 
-            // Set the current date.
-            $curDate = $dates[$i - 1];
+            // Set the current bound.
+            $curBound = $bounds[$i - 1];
 
-            if ($curDate[2] === '+') {
+            if ($curBound[2] === '+') {
                 // If this is a low bound,
                 // add the key of the interval to the array of active intervals.
-                $activeIntervals[$curDate[3]] = true;
+                $activeIntervals[$curBound[3]] = true;
             } else {
                 // If this is an high bound, remove the key.
-                unset($activeIntervals[$curDate[3]]);
+                unset($activeIntervals[$curBound[3]]);
             }
 
             if (empty($activeIntervals)) {
-                // If no intervals are active on this date,
+                // If no intervals are active on this bound,
                 // the value of this interval is null.
                 $ival = null;
             } else {
@@ -455,7 +479,7 @@ class IntervalGraph implements \JsonSerializable
                 );
             }
 
-            $newIntervals[] = [$curDate[0], $dates[$i][0], $ival];
+            $newIntervals[] = [$curBound[0], $bounds[$i][0], $ival];
         }
 
         return $newIntervals;
@@ -465,12 +489,12 @@ class IntervalGraph implements \JsonSerializable
      * Define the function to convert the interval values to a numeric value
      * in order to match them to a color on the palette.
      *
-     * @param \Closure $valueToNumericFunction
+     * @param \Closure $valueToNumeric
      * @return IntervalGraph
      */
-    public function setValueToNumericFunction(\Closure $valueToNumericFunction)
+    public function setValueToNumeric(\Closure $valueToNumeric)
     {
-        $this->valueToNumericFunction = $valueToNumericFunction;
+        $this->valueToNumeric = $valueToNumeric;
         return $this;
     }
 
@@ -478,36 +502,36 @@ class IntervalGraph implements \JsonSerializable
      * Define the  function to convert the interval values to strings
      * in order to display them in the view.
      *
-     * @param \Closure $valueToStringFunction
+     * @param \Closure $valueToString
      * @return IntervalGraph
      */
-    public function setValueToStringFunction(\Closure $valueToStringFunction)
+    public function setValueToString(\Closure $valueToString)
     {
-        $this->valueToStringFunction = $valueToStringFunction;
+        $this->valueToString = $valueToString;
         return $this;
     }
 
     /**
      * Define the function to aggregate interval values.
      *
-     * @param \Closure $aggregateFunction
+     * @param \Closure $aggregate
      * @return IntervalGraph
      */
-    public function setAggregateFunction(\Closure $aggregateFunction)
+    public function setAggregate(\Closure $aggregate)
     {
-        $this->aggregateFunction = $aggregateFunction;
+        $this->aggregateFunction = $aggregate;
         return $this;
     }
 
     /**
      * Set the function to convert interval bound values to string.
      *
-     * @param \Closure $boundToStringFunction
+     * @param \Closure $boundToString
      * @return IntervalGraph
      */
-    public function setBoundToStringFunction($boundToStringFunction)
+    public function setBoundToString($boundToString)
     {
-        $this->boundToStringFunction = $boundToStringFunction;
+        $this->boundToString = $boundToString;
         return $this;
     }
 
@@ -530,7 +554,6 @@ class IntervalGraph implements \JsonSerializable
      */
     public function setIntervals(array $intervals)
     {
-        self::checkFormat($intervals);
         $this->intervals = $intervals;
         $this->values = null;
         return $this;
@@ -583,12 +606,12 @@ class IntervalGraph implements \JsonSerializable
     }
 
     /**
-     * @param \Closure $boundToNumericFunction
+     * @param \Closure $boundToNumeric
      * @return IntervalGraph
      */
-    public function setBoundToNumericFunction($boundToNumericFunction)
+    public function setBoundToNumeric($boundToNumeric)
     {
-        $this->boundToNumericFunction = $boundToNumericFunction;
+        $this->boundToNumeric = $boundToNumeric;
         return $this;
     }
 

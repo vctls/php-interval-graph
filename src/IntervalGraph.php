@@ -107,7 +107,9 @@ class IntervalGraph implements \JsonSerializable
             foreach ([['Lower bound', 'bound'], ['Higher bound', 'bound'], ['Value', 'value']] as $index => $property) {
                 
                 // Skip value property of valueless intervals.
-                if ($property[1] === 'value' && !isset($interval[$index])) continue;
+                if ($property[1] === 'value' && !isset($interval[$index])) {
+                    continue;
+                }
                 
                 foreach (['numeric', 'string'] as $expectedType) {
                     

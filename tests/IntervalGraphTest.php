@@ -73,14 +73,54 @@ class IntervalGraphTest extends \PHPUnit\Framework\TestCase
     }
 
     /**
+     * Provide interval sets to test truncation.
+     * @return array
+     */
+    public function truncationProvider()
+    {
+        $d = function ($dateString){
+            return \DateTime::createFromFormat('Y-m-d h:i:s', $dateString . ' 00:00:00');
+        };
+        
+        return [
+            [
+                [[0, 3, 1], [2, 5, 1]], [1,4],
+                [[1, 3, 1], [2, 4, 1]]
+            ],
+            [
+                [[$d('2019-01-10'), $d('2019-02-05'), 5], [$d('2019-01-28'), $d('2019-02-25')], [$d('2019-02-13'), $d('2019-02-16'), 1]],
+                [$d('2019-01-15'), $d('2019-02-12')],
+                [[$d('2019-01-15'), $d('2019-02-05'), 5], [$d('2019-01-28'), $d('2019-02-12')]]
+            ],
+            // TODO Borderline cases (same bounds, etc.)
+        ];
+    }
+
+    /**
+     * @dataProvider truncationProvider
+     * @param array $intervals
+     * @param array $limits
+     * @param array $expected
+     */
+    public function testTruncate(array $intervals, array $limits, array $expected)
+    {
+        $truncated = IntervalGraph::truncate($intervals, $limits[0], $limits[1]);
+        $this->assertEquals($expected, $truncated, "Generated values don't match the expected result.");
+    }
+
+    /**
      * @throws \Exception
      */
     public function testFlatIntervals()
     {
+        $d = function ($dateString){
+            return \DateTime::createFromFormat('Y-m-d h:i:s', $dateString . ' 00:00:00');
+        };
+        
         $intervals = [
-            [new \DateTime('1970-01-01'), new \DateTime('1970-01-06')],
-            [new \DateTime('1970-01-02'), new \DateTime('1970-01-04'), 2],
-            [new \DateTime('1970-01-03'), new \DateTime('1970-01-05'), 2],
+            [$d('1970-01-01'), $d('1970-01-06')],
+            [$d('1970-01-02'), $d('1970-01-04'), 2],
+            [$d('1970-01-03'), $d('1970-01-05'), 2],
         ];
 
         $intervalGraph = new IntervalGraph($intervals);

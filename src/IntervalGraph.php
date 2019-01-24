@@ -88,11 +88,7 @@ class IntervalGraph implements \JsonSerializable
     public function checkIntervals()
     {
         
-        if (!isset($intervals)) {
-            $intervals = $this->intervals;
-        }
-        
-        foreach ($intervals as $intervalKey => $interval) {
+        foreach ($this->intervals as $intervalKey => $interval) {
 
             // Check that the interval is an array.
             if (!is_array($interval)) {
@@ -271,10 +267,12 @@ class IntervalGraph implements \JsonSerializable
         $vs = $this->values;
         ob_start();
         include $this->template;
-        $html = ob_get_clean();
+        
         // Remove all surplus whitespace.
-        $html = preg_replace(['/(?<=>)\s+/', '/\s+(?=<)/', '/\s+/'], ['', '', ' '], $html);
-        return $html;
+        return preg_replace(
+            ['/(?<=>)\s+/', '/\s+(?=<)/', '/\s+/'], ['', '', ' '], 
+            ob_get_clean()
+        );
     }
 
     /**

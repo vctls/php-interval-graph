@@ -7,6 +7,8 @@ namespace Vctls\IntervalGraph;
  */
 class IntervalGraph implements \JsonSerializable
 {
+    use TruncatableTrait;
+    
     /** @var array Initial intervals */
     protected $intervals;
 
@@ -82,12 +84,12 @@ class IntervalGraph implements \JsonSerializable
      * The third element must be the value.
      *
      * Inverted end and low bounds will be put back in chronological order.
-     * 
+     *
      * @return $this
      */
     public function checkIntervals()
     {
-        
+
         foreach ($this->intervals as $intervalKey => $interval) {
 
             // Check that the interval is an array.
@@ -101,29 +103,31 @@ class IntervalGraph implements \JsonSerializable
             // Check that the bounds and value of the interval can be converted to both a numeric
             // and string value with the given closures.
             foreach ([['Lower bound', 'bound'], ['Higher bound', 'bound'], ['Value', 'value']] as $index => $property) {
-                
+
                 // Skip value property of valueless intervals.
                 if ($property[1] === 'value' && !isset($interval[$index])) {
                     continue;
                 }
-                
+
                 foreach (['numeric', 'string'] as $expectedType) {
-                    
+
                     $expectedTypeTitle = ucfirst($expectedType);
-                    
+
                     try {
                         $value = ($this->{"$property[1]To$expectedTypeTitle"})($interval[$index]);
                     } catch (\Exception $exception) {
-                        throw new \InvalidArgumentException(
+                        // FIXME Handle Type errors?
+                        throw new PropertyConversionException(
                             "$property[0] of interval $intervalKey cannot be converted to a $expectedType value " .
-                            "with the given '$property[1]To$expectedTypeTitle' function. Error : " . $exception->getMessage()
+                            "with the given '$property[1]To$expectedTypeTitle' function. Error : " . 
+                            $exception->getMessage()
                         );
                     }
 
                     $actualType = gettype($value);
 
                     if (!call_user_func("is_$expectedType", $value)) {
-                        throw new \InvalidArgumentException(
+                        throw new PropertyConversionException(
                             "$property[0] of interval $intervalKey is not converted to a $expectedType value " .
                             "by the given '$property[1]To$expectedTypeTitle' function. Returned type : $actualType"
                         );
@@ -140,105 +144,10 @@ class IntervalGraph implements \JsonSerializable
         }
 
         // TODO Check that the values can be aggregated with the given closure.
-        
+
         return $this;
     }
-
-    /**
-     * Truncate all intervals to the given lower and upper limits.
-     *
-     * @param array $intervals
-     * @param mixed $lowerLimit
-     * @param mixed $upperLimit
-     * @param bool $padding Add null value intervals between the bounds and the first and last bounds.
-     * @return array
-     */
-    public static function truncate(array $intervals, $lowerLimit = null, $upperLimit = null, $padding = false)
-    {
-        if (isset($lowerLimit)) {
-            $intervals = array_map(function ($i) use ($lowerLimit) {
-                if ($i[0] < $lowerLimit) { // If the low bound is before the lower bound...
-                    if ($i[1] < $lowerLimit) {
-                        // ... and the high bound is also before the lower bound, set the interval to false.
-                        $i = false;
-                    } else {
-                        // If only the low bound is before the lower bound, set it to the bound value.
-                        $i[0] = $lowerLimit;
-                    }
-                }
-                return $i;
-            }, $intervals);
-
-            // Remove false elements.
-            $intervals = array_filter($intervals);
-
-            // If padding is required and a lower limit is set and is inferior to the min bound,
-            // add a weightless interval between that bound and the limit.
-            if ($padding) {
-                $minBound = self::minBound($intervals);
-                if (isset($minBound) && $minBound > $lowerLimit) {
-                    $intervals[] = [$lowerLimit, $minBound];
-                }
-            }
-        }
-
-        // TODO DRY
-        if (isset($upperLimit)) {
-            $intervals = array_map(function ($i) use ($upperLimit) {
-                if ($i[1] > $upperLimit) {
-                    if ($i[0] > $upperLimit) {
-                        // If both bounds are after the given upper limit, set the interval to false.
-                        $i = false;
-                    } else {
-                        // If only the high bound is after the upper limit, set it to the bound value.
-                        $i[1] = $upperLimit;
-                    }
-                }
-                return $i;
-            }, $intervals);
-
-            // Remove false elements.
-            $intervals = array_filter($intervals);
-
-            // If padding is required and a upper limit is set and is superior to the max bound,
-            // add a valueless interval between that bound and the limit.
-            if ($padding) {
-                $maxBound = self::maxBound($intervals);
-                if (isset($maxBound) && $maxBound < $upperLimit) {
-                    $intervals[] = [$upperLimit, $maxBound];
-                }
-            }
-        }
-
-        return $intervals;
-    }
-
-    /**
-     * Get the minimum bound in an array of intervals.
-     *
-     * @param $intervals
-     * @return mixed
-     */
-    public static function minBound($intervals)
-    {
-        $bounds = array_column($intervals, 0);
-        sort($bounds);
-        return array_shift($bounds);
-    }
-
-    /**
-     * Get the maximum bound in an array of intervals.
-     *
-     * @param $intervals
-     * @return mixed
-     */
-    public static function maxBound($intervals)
-    {
-        $bounds = array_column($intervals, 1);
-        sort($bounds);
-        return array_pop($bounds);
-    }
-
+    
     /**
      * Render an HTML view of the intervalGraph.
      *
@@ -267,10 +176,10 @@ class IntervalGraph implements \JsonSerializable
         $vs = $this->values;
         ob_start();
         include $this->template;
-        
+
         // Remove all surplus whitespace.
         return preg_replace(
-            ['/(?<=>)\s+/', '/\s+(?=<)/', '/\s+/'], ['', '', ' '], 
+            ['/(?<=>)\s+/', '/\s+(?=<)/', '/\s+/'], ['', '', ' '],
             ob_get_clean()
         );
     }
@@ -411,9 +320,9 @@ class IntervalGraph implements \JsonSerializable
 
     /**
      * Make an array of bounds from an array of intervals.
-     * 
+     *
      * Assign the value of the interval to each bound.
-     * 
+     *
      * Assign and a '+' sign if it is a low bound, and a '-' if it is an high bound.
      *
      * @param $intervals

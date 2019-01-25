@@ -3,6 +3,7 @@
 namespace Vctls\IntervalGraph\Test;
 
 use Vctls\IntervalGraph\IntervalGraph;
+use Vctls\IntervalGraph\PropertyConversionException;
 
 /**
  * Class IntervalGraphTest
@@ -29,6 +30,32 @@ class IntervalGraphTest extends \PHPUnit\Framework\TestCase
         $this->assertTrue($intervalGraph instanceof IntervalGraph, 'An IntervalGraph could not be created.');
     }
 
+    public function getSimpleIntegerSumIntervalGraph()
+    {
+        $intervals = [
+            [0, 2, 1],
+            [1, 3, 1]
+        ];
+
+        return (new IntervalGraph($intervals))
+            ->setBoundToNumeric(function (int $bound) {
+                return $bound;
+            })
+            ->setBoundToString(function (int $bound) {
+                return (string)$bound;
+            })
+            ->setValueToNumeric(function (int $value) {
+                return $value;
+            })
+            ->setValueToString(function (int $value) {
+                return (string)$value;
+            })
+            ->setAggregate(function ($a, $b) {
+                return $a + $b;
+            });
+
+    }
+
     /**
      * Test calculation of values from simple numeric intervals.
      * TODO Separate calculation of values and visual information.
@@ -37,35 +64,13 @@ class IntervalGraphTest extends \PHPUnit\Framework\TestCase
      */
     public function testSimpleIntegerSumIntervals()
     {
-        $intervals = [
-            [0, 2, 1],
-            [1, 3, 1]
-        ];
-
-        $intervalGraph = (new IntervalGraph($intervals))
-            ->setBoundToNumeric(function (int $bound) {
-                return $bound;
-            })
-            ->setBoundToString(function (int $bound) {
-                return (string)$bound;
-            })
-            ->setValueToNumeric(function (int $value){
-                return $value;
-            })
-            ->setValueToString(function (int $value){
-                return (string)$value;
-            })
-            ->setAggregate(function ($a, $b) {
-                return $a + $b;
-            })
-        ;
-
+        $intervalGraph = $this->getSimpleIntegerSumIntervalGraph();
         $values = $intervalGraph->process()->checkIntervals()->getValues();
 
         $expected = [
-            [0,67,"#ff9431","0","1","1"],
-            [33,33,"#ff9431","1","2","2"],
-            [67,0,"#ff9431","2","3","1"]
+            [0, 67, "#ff9431", "0", "1", "1"],
+            [33, 33, "#ff9431", "1", "2", "2"],
+            [67, 0, "#ff9431", "2", "3", "1"]
         ];
 
         $this->assertEquals($expected, $values, "Generated values don't match the expected result.");
@@ -78,18 +83,22 @@ class IntervalGraphTest extends \PHPUnit\Framework\TestCase
      */
     public function truncationProvider()
     {
-        $d = function ($dateString){
+        $d = function ($dateString) {
             return \DateTime::createFromFormat('Y-m-d h:i:s', $dateString . ' 00:00:00');
         };
-        
+
         return [
             [
-                [[0, 3, 1], [2, 5, 1]], [1,4],
+                [[0, 3, 1], [2, 5, 1]], [1, 4], false,
                 [[1, 3, 1], [2, 4, 1]]
             ],
             [
+                [[0, 3, 1], [2, 5, 1]], [-1, 6], true,
+                [[-1, 0], [0, 3, 1], [2, 5, 1], [5, 6]]
+            ],
+            [
                 [[$d('2019-01-10'), $d('2019-02-05'), 5], [$d('2019-01-28'), $d('2019-02-25')], [$d('2019-02-13'), $d('2019-02-16'), 1]],
-                [$d('2019-01-15'), $d('2019-02-12')],
+                [$d('2019-01-15'), $d('2019-02-12')], false,
                 [[$d('2019-01-15'), $d('2019-02-05'), 5], [$d('2019-01-28'), $d('2019-02-12')]]
             ],
             // TODO Borderline cases (same bounds, etc.)
@@ -100,11 +109,12 @@ class IntervalGraphTest extends \PHPUnit\Framework\TestCase
      * @dataProvider truncationProvider
      * @param array $intervals
      * @param array $limits
+     * @param bool $padding
      * @param array $expected
      */
-    public function testTruncate(array $intervals, array $limits, array $expected)
+    public function testTruncate(array $intervals, array $limits, bool $padding, array $expected)
     {
-        $truncated = IntervalGraph::truncate($intervals, $limits[0], $limits[1]);
+        $truncated = IntervalGraph::truncate($intervals, $limits[0], $limits[1], $padding);
         $this->assertEquals($expected, $truncated, "Generated values don't match the expected result.");
     }
 
@@ -113,10 +123,10 @@ class IntervalGraphTest extends \PHPUnit\Framework\TestCase
      */
     public function testFlatIntervals()
     {
-        $d = function ($dateString){
+        $d = function ($dateString) {
             return \DateTime::createFromFormat('Y-m-d h:i:s', $dateString . ' 00:00:00');
         };
-        
+
         $intervals = [
             [$d('1970-01-01'), $d('1970-01-06')],
             [$d('1970-01-02'), $d('1970-01-04'), 2],
@@ -139,12 +149,17 @@ class IntervalGraphTest extends \PHPUnit\Framework\TestCase
      */
     public function testCheck()
     {
-        // Naive test.
-        $this->expectException(\InvalidArgumentException::class);
+        $exception = null;
         $badArgument = ['something something'];
         $intervalGraph = new IntervalGraph($badArgument);
-        $intervalGraph->checkIntervals();
         
+        try {
+            $intervalGraph->checkIntervals();
+        } catch (\Exception $exception) {
+        }
+        
+        $this->assertInstanceOf(\InvalidArgumentException::class, $exception);
+
         // TODO Check that bounds and values are compatible with the given conversion closures.
     }
     

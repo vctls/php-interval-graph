@@ -39,4 +39,4 @@ echo $intervalGraph;
 
 Check index.php and the demo for more examples.
 
-Demo : https://php-interval-graph-demo.herokuapp.com/
+Demo : https://php-interval-graph-demo.herokuapp.com/index.php

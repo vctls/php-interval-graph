@@ -33,6 +33,11 @@ class IntervalGraphTest extends TestCase
         $this->assertTrue($intervalGraph instanceof IntervalGraph, 'An IntervalGraph could not be created.');
     }
 
+    /**
+     * Create an IntervalGraph to aggregate simple integer values. 
+     * 
+     * @return IntervalGraph
+     */
     public function getSimpleIntegerSumIntervalGraph()
     {
         $intervals = [
@@ -77,7 +82,6 @@ class IntervalGraphTest extends TestCase
         ];
 
         $this->assertEquals($expected, $values, "Generated values don't match the expected result.");
-
     }
 
     /**
@@ -137,11 +141,19 @@ class IntervalGraphTest extends TestCase
         ];
 
         $intervalGraph = new IntervalGraph($intervals);
-        $flat = $intervalGraph->getFlatIntervals($intervals, $intervalGraph->getAggregateFunction());
+        $flat = $intervalGraph->getFlatIntervals();
+        /**
+         * @var DateTime $lowBound
+         * @var DateTime $highBound
+         */
+        list($lowBound, $highBound) = $flat[2];
+        
         $this->assertTrue($flat[2][0] instanceof DateTime);
-        $this->assertEquals('1970-01-03', $flat[2][0]->format('Y-m-d'));
+        $this->assertEquals('1970-01-03', $lowBound->format('Y-m-d'));
+        
         $this->assertTrue($flat[2][1] instanceof DateTime);
-        $this->assertEquals('1970-01-04', $flat[2][1]->format('Y-m-d'));
+        $this->assertEquals('1970-01-04', $highBound->format('Y-m-d'));
+        
         $this->assertEquals(4, $flat[2][2]);
     }
 
@@ -164,6 +176,31 @@ class IntervalGraphTest extends TestCase
         $this->assertInstanceOf(InvalidArgumentException::class, $exception);
 
         // TODO Check that bounds and values are compatible with the given conversion closures.
+    }
+    
+    public function testComputeNumericValues()
+    {
+        $d = function ($dateString) {
+            return DateTime::createFromFormat('Y-m-d h:i:s', $dateString . ' 00:00:00');
+        };
+
+        $intervals = [
+            [$d('1970-01-01'), $d('1970-01-06')],
+            [$d('1970-01-02'), $d('1970-01-04'), 2],
+            [$d('1970-01-03'), $d('1970-01-05'), 2],
+        ];
+        
+        $values = (new IntervalGraph($intervals))->computeNumericValues();
+        
+        $expected = [
+            [0, 86400, 0],
+            [86400, 172800, 2],
+            [172800, 259200, 4],
+            [259200, 345600, 2],
+            [345600, 432000, 0]
+        ];
+        
+        $this->assertEquals($expected, $values, "Generated values don't match the expected result.");
     }
     
 }

@@ -7,6 +7,7 @@ use Exception;
 use InvalidArgumentException;
 use PHPUnit\Framework\TestCase;
 use Vctls\IntervalGraph\IntervalGraph;
+use Vctls\IntervalGraph\Util\Date as D;
 
 /**
  * Class IntervalGraphTest
@@ -21,16 +22,36 @@ class IntervalGraphTest extends TestCase
     {
         $longIntervals = [
             [new DateTime('today'), new DateTime('today + 3 days'), 2 / 10],
-            [new DateTime('today + 1 day'), new DateTime('today + 4 days'), 2 / 10],
-            [new DateTime('today + 2 day'), new DateTime('today + 5 days'), 3 / 10],
-            [new DateTime('today + 3 day'), new DateTime('today + 6 days'), 5 / 10],
-            [new DateTime('today + 4 day'), new DateTime('today + 7 days'), 4 / 10],
-            [new DateTime('today + 5 day'), new DateTime('today + 8 days'), 2 / 10],
-            [new DateTime('today + 6 day'), new DateTime('today + 9 days'), 2 / 10],
+            D::intv(1, 4, 2 / 10),
+            D::intv(2, 5, 3 / 10),
+            D::intv(3, 6, 5 / 10),
+            D::intv(4, 7, 4 / 10),
+            D::intv(5, 8, 2 / 10),
+            D::intv(6, 9, 2 / 10),
         ];
 
         $intervalGraph = new IntervalGraph($longIntervals);
         $this->assertTrue($intervalGraph instanceof IntervalGraph, 'An IntervalGraph could not be created.');
+    }
+
+    /**
+     * Test calculation of values from simple numeric intervals.
+     * TODO Separate calculation of values and visual information.
+     *
+     * @throws Exception
+     */
+    public function testSimpleIntegerSumIntervals()
+    {
+        $intervalGraph = $this->getSimpleIntegerSumIntervalGraph();
+        $values = $intervalGraph->createView()->checkIntervals()->getValues();
+
+        $expected = [
+            [0, 67, "#ff9431", "0", "1", "1"],
+            [33, 33, "#ff9431", "1", "2", "2"],
+            [67, 0, "#ff9431", "2", "3", "1"]
+        ];
+
+        $this->assertEquals($expected, $values, "Generated values don't match the expected result.");
     }
 
     /**
@@ -62,26 +83,6 @@ class IntervalGraphTest extends TestCase
                 return $a + $b;
             });
 
-    }
-
-    /**
-     * Test calculation of values from simple numeric intervals.
-     * TODO Separate calculation of values and visual information.
-     *
-     * @throws Exception
-     */
-    public function testSimpleIntegerSumIntervals()
-    {
-        $intervalGraph = $this->getSimpleIntegerSumIntervalGraph();
-        $values = $intervalGraph->createView()->checkIntervals()->getValues();
-
-        $expected = [
-            [0, 67, "#ff9431", "0", "1", "1"],
-            [33, 33, "#ff9431", "1", "2", "2"],
-            [67, 0, "#ff9431", "2", "3", "1"]
-        ];
-
-        $this->assertEquals($expected, $values, "Generated values don't match the expected result.");
     }
 
     /**
@@ -140,7 +141,7 @@ class IntervalGraphTest extends TestCase
             [$d('1970-01-03'), $d('1970-01-05'), 2],
         ];
 
-        $intervalGraph = new IntervalGraph($intervals);
+        $intervalGraph = D::intvg($intervals);
         $flat = $intervalGraph->getFlatIntervals();
         /**
          * @var DateTime $lowBound
@@ -190,14 +191,14 @@ class IntervalGraphTest extends TestCase
             [$d('1970-01-03'), $d('1970-01-05'), 2],
         ];
         
-        $values = (new IntervalGraph($intervals))->computeNumericValues();
+        $values = (D::intvg($intervals))->computeNumericValues();
         
         $expected = [
-            [0, 86400, 0],
-            [86400, 172800, 2],
+            [0, 86399, 0],
+            [86400, 172799, 2],
             [172800, 259200, 4],
-            [259200, 345600, 2],
-            [345600, 432000, 0]
+            [259201, 345600, 2],
+            [345601, 432000, 0]
         ];
         
         $this->assertEquals($expected, $values, "Generated values don't match the expected result.");

@@ -1,56 +1,49 @@
 <?php
+
+/** @noinspection PhpDocMissingThrowsInspection */
+
 require_once 'vendor/autoload.php';
 
 use Vctls\IntervalGraph\IntervalGraph;
-
-/**
- * Generate random dates.
- * @param int $min
- * @param int $max
- * @return DateTime
- */
-function rdm($min = 1514764800, $max = 1577750400)
-{
-    return (new DateTime)->setTimestamp(mt_rand($min, $max));
-}
+use Vctls\IntervalGraph\Util\Date as D;
 
 $today = new DateTime('today');
 
-$base = [$today, new DateTime('today + 5 days')];
-$date1 = [$today, new DateTime('today + 4 days'), 7 / 10];
-$date2 = [new DateTime('today + 1 day'), new DateTime('today + 5 days'), 3 / 10];
-$date3 = [new DateTime('today + 2 day'), new DateTime('today + 3 days'), 3 / 10];
-$overlapped1 = new IntervalGraph([$base, $date1]);
-$overlapped2 = new IntervalGraph([$base, $date2]);
-$overlapped3 = new IntervalGraph([$base, $date3]);
-$overlapped = new IntervalGraph([$base, $date1, $date2, $date3]);
+$base = D::intv(0,5);
+$intv1 = D::intv(0,4, 7/10);
+$intv2 = D::intv(1,5,3/10);
+$intv3 = D::intv(2,3,3/10);
+$overlapped1 = D::intvg([$base, $intv1]);
+$overlapped2 = D::intvg([$base, $intv2]);
+$overlapped3 = D::intvg([$base, $intv3]);
+$overlapped = D::intvg([$base, $intv1, $intv2, $intv3]);
 
-$withNull1 = new IntervalGraph([$base, [new DateTime('today'), new DateTime('today + 3 days'), 4 / 10],]);
-$withNull2 = new IntervalGraph([$base, [new DateTime('today + 1 day'), new DateTime('today + 2 days')],]);
-$withNull3 = new IntervalGraph([$base, [new DateTime('today + 2 day'), new DateTime('today + 3 days'), 4 / 10],]);
-$withNull4 = new IntervalGraph([$base, [new DateTime('today + 4 day'), new DateTime('today + 5 days'), 5 / 10],]);
-$withNullIntervals = new IntervalGraph([
+$withNull1 = D::intvg([$base, D::intv(0,3,4/10)]);
+$withNull2 = D::intvg([$base, D::intv(1,2)]);
+$withNull3 = D::intvg([$base, D::intv(2,3,4/10)]);
+$withNull4 = D::intvg([$base, D::intv(4,5,5/10)]);
+$withNullIntervals = D::intvg([
     [$today, new DateTime('today + 3 days'), 4 / 10],
     [new DateTime('today + 1 day'), new DateTime('today + 2 days')],
-    [new DateTime('today + 2 day'), new DateTime('today + 3 days'), 4 / 10],
-    [new DateTime('today + 4 day'), new DateTime('today + 5 days'), 5 / 10],
+    D::intv(2, 3, 4 / 10),
+    D::intv(4, 5, 5 / 10),
 ]);
 
 $longIntervals = [
     [$today, new DateTime('today + 3 days'), 2 / 10],
-    [new DateTime('today + 1 day'), new DateTime('today + 4 days'), 2 / 10],
-    [new DateTime('today + 2 day'), new DateTime('today + 5 days'), 3 / 10],
-    [new DateTime('today + 3 day'), new DateTime('today + 6 days'), 5 / 10],
-    [new DateTime('today + 4 day'), new DateTime('today + 7 days'), 4 / 10],
-    [new DateTime('today + 5 day'), new DateTime('today + 8 days'), 2 / 10],
-    [new DateTime('today + 6 day'), new DateTime('today + 9 days'), 2 / 10],
+    D::intv(1, 4, 2 / 10),
+    D::intv(2, 5, 3 / 10),
+    D::intv(3, 6, 5 / 10),
+    D::intv(4, 7, 4 / 10),
+    D::intv(5, 8, 2 / 10),
+    D::intv(6, 9, 2 / 10),
 ];
 
-$longDateFormat = function (\DateTime $bound){
+$longDateFormat = function (DateTime $bound) {
     return $bound->format('Y-m-d H:i:s');
 };
 
-$long = (new IntervalGraph($longIntervals))->setBoundToString($longDateFormat);
+$long = (D::intvg($longIntervals))->setBoundToString($longDateFormat);
 
 /*
  * CUSTOM VALUE TYPES
@@ -63,21 +56,25 @@ $agg = function ($a, $b) {
 };
 
 // A toNumeric function…
-$toNumeric = function ($a) {return $a === null ? null : (int)($a[0] / $a[1] * 100);};
+$toNumeric = function ($a) {
+    return $a === null ? null : (int)($a[0] / $a[1] * 100);
+};
 
 // A toString function…
-$toString = function ($a) {return $a === null ? null : ($a[0] . '/' . $a[1]);};
+$toString = function ($a) {
+    return $a === null ? null : ($a[0] . '/' . $a[1]);
+};
 
 $fractions = [
     [$today, new DateTime('today + 3 days'), [2, 10]],
-    [new DateTime('today + 1 day'), new DateTime('today + 4 days'), [2, 10]],
-    [new DateTime('today + 2 day'), new DateTime('today + 5 days'), [3, 10]],
-    [new DateTime('today + 3 day'), new DateTime('today + 6 days'), [5, 10]],
-    [new DateTime('today + 4 day'), new DateTime('today + 7 days'), [4, 10]],
-    [new DateTime('today + 5 day'), new DateTime('today + 8 days'), [2, 10]],
-    [new DateTime('today + 6 day'), new DateTime('today + 9 days'), [2, 10]],
+    D::intv(1, 4, [2, 10]),
+    D::intv(2, 5, [3, 10]),
+    D::intv(3, 6, [5, 10]),
+    D::intv(4, 7, [4, 10]),
+    D::intv(5, 8, [2, 10]),
+    D::intv(6, 9, [2, 10]),
 ];
-$fractim = (new IntervalGraph($fractions))->setAggregate($agg)
+$fractim = (D::intvg($fractions))->setAggregate($agg)
     ->setValueToNumeric($toNumeric)
     ->setValueToString($toString);
 $fract = $fractim->draw();
@@ -88,33 +85,34 @@ $fract = $fractim->draw();
  * TRUNCATED INTERVALS
  */
 try {
-    $date1 = (clone $today)->add(new DateInterval('PT60H'));
-    $date2 = (clone $today)->add(new DateInterval('PT108H'));
-    $date3 = (clone $date2)->add(new DateInterval('PT60H'));
+    $intv1 = (clone $today)->add(new DateInterval('PT60H'));
+    $intv2 = (clone $today)->add(new DateInterval('PT108H'));
+    $intv3 = (clone $intv2)->add(new DateInterval('PT60H'));
 } catch (Exception $e) {
 }
 
-$truncated = ($fractim->setIntervals(IntervalGraph::truncate($fractions, $date1, $date2)))
+$truncated = ($fractim->setIntervals(IntervalGraph::truncate($fractions, $intv1, $intv2)))
     ->setBoundToString($longDateFormat);
 /* /TRUNCATED INTERVALS */
 
-$withDates = new IntervalGraph([
-    [$date1, $date1],
-    [$today, new DateTime('today + 4 days'), 7 / 10],
-    [$date2, $date2],
-    [new DateTime('today + 1 day'), new DateTime('today + 5 days'), 3 / 10],
-    [new DateTime('today + 2 day'), new DateTime('today + 3 days'), 3 / 10],
-    [$date3, $date3],
-]);
+$withDates = (D::intvg([
+    [$intv1, $intv1],
+    D::intv(0,4,7/10),
+    [$intv2, $intv2],
+    D::intv(1, 5, 3 / 10),
+    D::intv(2, 3, 3 / 10),
+    [$intv3, $intv3],
+]))
+    ->setBoundToString($longDateFormat);;
 
 $intvGraphs = [];
 foreach (range(0, 20) as $t) {
     $intervals = [];
     $j = (int)rand(3, 6);
     for ($i = 0; $i < $j; $i++) {
-        $intervals[] = [rdm(), rdm(), rand(1, 9) / 10];
+        $intervals[] = [D::rdm(), D::rdm(), rand(1, 9) / 10];
     }
-    $intvGraphs[] = (new IntervalGraph($intervals))->checkIntervals();
+    $intvGraphs[] = (D::intvg($intervals))->checkIntervals();
 }
 
 ?>
@@ -177,8 +175,8 @@ foreach (range(0, 20) as $t) {
 <?= $fract ?>
 
 <p>
-    The same graph, truncated between <?= $date1->format('Y-m-d H:i:s') ?>
-    and <?= $date2->format('Y-m-d H:i:s') ?>.
+    The same graph, truncated between <?= $intv1->format('Y-m-d H:i:s') ?>
+    and <?= $intv2->format('Y-m-d H:i:s') ?>.
     <?= $truncated ?>
 </p>
 
@@ -195,7 +193,7 @@ foreach (range(0, 20) as $t) {
 <script>
     'use strict';
     const graphs = JSON.parse('<?= json_encode($intvGraphs) ?>');
-    const el = document.getElementById('random');
+    const el = document.getElementByIU::d('random');
 
     try {
         graphs.forEach(function (graph) {

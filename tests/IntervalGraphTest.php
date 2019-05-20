@@ -68,7 +68,7 @@ class IntervalGraphTest extends TestCase
     public function testSimpleIntegerSumIntervals()
     {
         $intervalGraph = $this->getSimpleIntegerSumIntervalGraph();
-        $values = $intervalGraph->process()->checkIntervals()->getValues();
+        $values = $intervalGraph->createView()->checkIntervals()->getValues();
 
         $expected = [
             [0, 67, "#ff9431", "0", "1", "1"],
@@ -137,7 +137,7 @@ class IntervalGraphTest extends TestCase
         ];
 
         $intervalGraph = new IntervalGraph($intervals);
-        $flat = $intervalGraph->getFlatIntervals();
+        $flat = $intervalGraph->getFlatIntervals($intervals, $intervalGraph->getAggregateFunction());
         $this->assertTrue($flat[2][0] instanceof DateTime);
         $this->assertEquals('1970-01-03', $flat[2][0]->format('Y-m-d'));
         $this->assertTrue($flat[2][1] instanceof DateTime);

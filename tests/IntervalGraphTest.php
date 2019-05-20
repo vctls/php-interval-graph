@@ -2,28 +2,31 @@
 
 namespace Vctls\IntervalGraph\Test;
 
+use DateTime;
+use Exception;
+use InvalidArgumentException;
+use PHPUnit\Framework\TestCase;
 use Vctls\IntervalGraph\IntervalGraph;
-use Vctls\IntervalGraph\PropertyConversionException;
 
 /**
  * Class IntervalGraphTest
  * @package Vctls\IntervalGraph\Test
  */
-class IntervalGraphTest extends \PHPUnit\Framework\TestCase
+class IntervalGraphTest extends TestCase
 {
     /**
-     * @throws \Exception
+     * @throws Exception
      */
     public function testCreate()
     {
         $longIntervals = [
-            [new \DateTime('today'), new \DateTime('today + 3 days'), 2 / 10],
-            [new \DateTime('today + 1 day'), new \DateTime('today + 4 days'), 2 / 10],
-            [new \DateTime('today + 2 day'), new \DateTime('today + 5 days'), 3 / 10],
-            [new \DateTime('today + 3 day'), new \DateTime('today + 6 days'), 5 / 10],
-            [new \DateTime('today + 4 day'), new \DateTime('today + 7 days'), 4 / 10],
-            [new \DateTime('today + 5 day'), new \DateTime('today + 8 days'), 2 / 10],
-            [new \DateTime('today + 6 day'), new \DateTime('today + 9 days'), 2 / 10],
+            [new DateTime('today'), new DateTime('today + 3 days'), 2 / 10],
+            [new DateTime('today + 1 day'), new DateTime('today + 4 days'), 2 / 10],
+            [new DateTime('today + 2 day'), new DateTime('today + 5 days'), 3 / 10],
+            [new DateTime('today + 3 day'), new DateTime('today + 6 days'), 5 / 10],
+            [new DateTime('today + 4 day'), new DateTime('today + 7 days'), 4 / 10],
+            [new DateTime('today + 5 day'), new DateTime('today + 8 days'), 2 / 10],
+            [new DateTime('today + 6 day'), new DateTime('today + 9 days'), 2 / 10],
         ];
 
         $intervalGraph = new IntervalGraph($longIntervals);
@@ -60,12 +63,12 @@ class IntervalGraphTest extends \PHPUnit\Framework\TestCase
      * Test calculation of values from simple numeric intervals.
      * TODO Separate calculation of values and visual information.
      *
-     * @throws \Exception
+     * @throws Exception
      */
     public function testSimpleIntegerSumIntervals()
     {
         $intervalGraph = $this->getSimpleIntegerSumIntervalGraph();
-        $values = $intervalGraph->process()->checkIntervals()->getValues();
+        $values = $intervalGraph->createView()->checkIntervals()->getValues();
 
         $expected = [
             [0, 67, "#ff9431", "0", "1", "1"],
@@ -84,7 +87,7 @@ class IntervalGraphTest extends \PHPUnit\Framework\TestCase
     public function truncationProvider()
     {
         $d = function ($dateString) {
-            return \DateTime::createFromFormat('Y-m-d h:i:s', $dateString . ' 00:00:00');
+            return DateTime::createFromFormat('Y-m-d h:i:s', $dateString . ' 00:00:00');
         };
 
         return [
@@ -119,12 +122,12 @@ class IntervalGraphTest extends \PHPUnit\Framework\TestCase
     }
 
     /**
-     * @throws \Exception
+     * @throws Exception
      */
     public function testFlatIntervals()
     {
         $d = function ($dateString) {
-            return \DateTime::createFromFormat('Y-m-d h:i:s', $dateString . ' 00:00:00');
+            return DateTime::createFromFormat('Y-m-d h:i:s', $dateString . ' 00:00:00');
         };
 
         $intervals = [
@@ -134,10 +137,10 @@ class IntervalGraphTest extends \PHPUnit\Framework\TestCase
         ];
 
         $intervalGraph = new IntervalGraph($intervals);
-        $flat = $intervalGraph->getFlatIntervals();
-        $this->assertTrue($flat[2][0] instanceof \DateTime);
+        $flat = $intervalGraph->getFlatIntervals($intervals, $intervalGraph->getAggregateFunction());
+        $this->assertTrue($flat[2][0] instanceof DateTime);
         $this->assertEquals('1970-01-03', $flat[2][0]->format('Y-m-d'));
-        $this->assertTrue($flat[2][1] instanceof \DateTime);
+        $this->assertTrue($flat[2][1] instanceof DateTime);
         $this->assertEquals('1970-01-04', $flat[2][1]->format('Y-m-d'));
         $this->assertEquals(4, $flat[2][2]);
     }
@@ -155,10 +158,10 @@ class IntervalGraphTest extends \PHPUnit\Framework\TestCase
         
         try {
             $intervalGraph->checkIntervals();
-        } catch (\Exception $exception) {
+        } catch (Exception $exception) {
         }
         
-        $this->assertInstanceOf(\InvalidArgumentException::class, $exception);
+        $this->assertInstanceOf(InvalidArgumentException::class, $exception);
 
         // TODO Check that bounds and values are compatible with the given conversion closures.
     }

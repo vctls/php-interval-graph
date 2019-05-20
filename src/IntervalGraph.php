@@ -2,10 +2,16 @@
 
 namespace Vctls\IntervalGraph;
 
+use Closure;
+use DateTime;
+use Exception;
+use InvalidArgumentException;
+use JsonSerializable;
+
 /**
  * A class to manipulate and display arrays of weighted intervals.
  */
-class IntervalGraph implements \JsonSerializable
+class IntervalGraph implements JsonSerializable
 {
     use TruncatableTrait;
     
@@ -18,19 +24,19 @@ class IntervalGraph implements \JsonSerializable
     /** @var string Path to the template used for rendering. */
     protected $template = 'template.php';
 
-    /** @var \Closure Return a numeric value from the inital bound value. */
+    /** @var Closure Return a numeric value from the inital bound value. */
     protected $boundToNumeric;
 
-    /** @var \Closure Return a string from the initial bound value. */
+    /** @var Closure Return a string from the initial bound value. */
     protected $boundToString;
 
-    /** @var \Closure Return a numeric value from an initial interval value. */
+    /** @var Closure Return a numeric value from an initial interval value. */
     protected $valueToNumeric;
 
-    /** @var \Closure Return a string value from an initial interval value. */
+    /** @var Closure Return a string value from an initial interval value. */
     protected $valueToString;
 
-    /** @var \Closure Aggregate interval values. */
+    /** @var Closure Aggregate interval values. */
     protected $aggregateFunction;
 
     /** @var Palette */
@@ -48,11 +54,11 @@ class IntervalGraph implements \JsonSerializable
             $this->setIntervals($intervals);
         }
 
-        $this->boundToNumeric = function (\DateTime $bound) {
+        $this->boundToNumeric = function (DateTime $bound) {
             return $bound->getTimestamp();
         };
 
-        $this->boundToString = function (\DateTime $bound) {
+        $this->boundToString = function (DateTime $bound) {
             return $bound->format("Y-m-d");
         };
 
@@ -72,6 +78,14 @@ class IntervalGraph implements \JsonSerializable
         };
 
         $this->palette = new Palette();
+    }
+    
+    /**
+     * @return Closure
+     */
+    public function getAggregateFunction(): Closure
+    {
+        return $this->aggregateFunction;
     }
 
     /**
@@ -95,7 +109,7 @@ class IntervalGraph implements \JsonSerializable
             // Check that the interval is an array.
             if (!is_array($interval)) {
                 $t = gettype($interval);
-                throw new \InvalidArgumentException(
+                throw new InvalidArgumentException(
                     "Each element of the '\$intervals' array should be an array, $t given."
                 );
             }
@@ -115,7 +129,7 @@ class IntervalGraph implements \JsonSerializable
 
                     try {
                         $value = ($this->{"$property[1]To$expectedTypeTitle"})($interval[$index]);
-                    } catch (\Exception $exception) {
+                    } catch (Exception $exception) {
                         // FIXME Handle Type errors?
                         throw new PropertyConversionException(
                             "$property[0] of interval $intervalKey cannot be converted to a $expectedType value " .
@@ -157,7 +171,7 @@ class IntervalGraph implements \JsonSerializable
     {
         try {
             $html = $this->draw();
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
             $html = "Error : " . $e->getMessage();
         }
         return $html;
@@ -171,10 +185,13 @@ class IntervalGraph implements \JsonSerializable
     public function draw()
     {
         if (!isset($this->values)) {
-            $this->process();
+            $this->createView();
         }
+
+        /** @noinspection PhpUnusedLocalVariableInspection */
         $vs = $this->values;
         ob_start();
+        /** @noinspection PhpIncludeInspection */
         include $this->template;
 
         // Remove all surplus whitespace.
@@ -189,36 +206,39 @@ class IntervalGraph implements \JsonSerializable
      *
      * @return IntervalGraph
      */
-    public function process()
+    public function createView()
     {
-        $flatIntervals = $this->getFlatIntervals();
+        $flatIntervals = $this->getFlatIntervals(
+            $this->intervals,
+            $this->aggregateFunction
+        );
 
         // Extract values.
         $t = array_column($flatIntervals, 2);
-
+        
         // Change bounds to numeric values.
-        $numVals = array_map(function (array $i) {
-            return [
-                ($this->boundToNumeric)($i[0]),
-                ($this->boundToNumeric)($i[1]),
+        foreach ($flatIntervals as $interval) {
+            $numVals[] = [
+                ($this->boundToNumeric)($interval[0]),
+                ($this->boundToNumeric)($interval[1]),
             ];
-        }, $flatIntervals);
+        }
 
         // Order by low bound.
         uasort($numVals, function (array $i1, array $i2) {
             return ($i1[0] < $i2[0]) ? -1 : 1;
         });
 
-        // Get the min timestamp.
+        // Get the min bound value.
         $min = reset($numVals)[0];
 
-        // Substract min from all timestamps.
-        $numVals = array_map(function ($i) use ($min) {
-            return [
-                $i[0] - $min,
-                $i[1] - $min
+        // Substract min from all bound values.
+        foreach ($numVals as $key => $numVal) {
+            $numVals[$key] = [
+                $numVal[0] - $min,
+                $numVal[1] - $min
             ];
-        }, $numVals);
+        }
 
         // Order by high bound.
         uasort($numVals, function (array $i1, array $i2) {
@@ -229,35 +249,44 @@ class IntervalGraph implements \JsonSerializable
         $max = end($numVals)[1];
 
         // Calculate percentages.
-        $numVals = array_map(function (array $i) use ($max) {
-            return array_map(function ($int) use ($max) {
-                return round($int * 100 / $max);
-            }, $i);
-        }, $numVals);
+        foreach ($numVals as $i => $numVal) {
+            foreach ($numVal as $j => $value) {
+                $numVal[$j] = round($value * 100 / $max);
+            }
+            $numVals[$i] = $numVal;
+        }
 
         // Put values back in, along with the formatted bound.
         // Since we're using associative sorting functions, we know the keys haven't changed.
-        $numVals = array_map(function ($k, array $i) use ($t, $flatIntervals) {
-            if ($flatIntervals[$k][0] === $flatIntervals[$k][1]) {
-                return [
-                    $i[0], // Single value position percentage
-                    ($this->boundToString)($flatIntervals[$k][0]), // Signle value string
+        foreach (array_keys($numVals) as $index => $numKey) {
+            
+            list($lowBound, $highBound) = $flatIntervals[$numKey];
+            list($startPercent, $endPercent) = $numVals[$index];
+            
+            if ($lowBound === $highBound) {
+                
+                $numVals[$index] = [
+                    $startPercent, // Single value position percentage
+                    ($this->boundToString)($lowBound), // Single value string
                 ];
+                
             } else {
-                $colorval = isset($t[$k]) ? ($this->valueToNumeric)($t[$k]) : null;
-                $stingval = isset($t[$k]) ? ($this->valueToString)($t[$k]) : null;
-                return [
-                    $i[0], // Interval start percentage
-                    100 - $i[1], // Interval end percentage from right
+                
+                $colorval = isset($t[$numKey]) ? ($this->valueToNumeric)($t[$numKey]) : null;
+                $stingval = isset($t[$numKey]) ? ($this->valueToString)($t[$numKey]) : null;
+                
+                $numVals[$index] = [
+                    $startPercent, // Interval start percentage
+                    100 - $endPercent, // Interval end percentage from right
                     // Note: for some reason, using 'widht' instead of 'right'
                     // causes the right border to be hidden underneath the next interval.
                     !empty($t) ? $this->palette->getColor($colorval) : 50, // Interval color
-                    ($this->boundToString)($flatIntervals[$k][0]), // Interval start string value
-                    ($this->boundToString)($flatIntervals[$k][1]), // Interval end string value
+                    ($this->boundToString)($lowBound), // Interval start string value
+                    ($this->boundToString)($highBound), // Interval end string value
                     !empty($t) ? ($stingval) : null,// Interval string value
                 ];
             }
-        }, array_keys($numVals), $numVals);
+        }
 
         // Put discrete values at the end and reset indices.
         // Reseting indices ensures the processed values are
@@ -270,18 +299,20 @@ class IntervalGraph implements \JsonSerializable
 
         return $this;
     }
-
+    
     /**
      * Transform an array of intervals with possible overlapping
      * into an array of adjacent intervals with no overlapping.
      *
+     * @param $intervals
+     * @param $aggregateFunction
      * @return array
      */
-    public function getFlatIntervals()
+    public static function getFlatIntervals($intervals, $aggregateFunction)
     {
-        $discreteValues = self::extractDiscreteValues($this->intervals);
-        $signedBounds = self::intervalsToSignedBounds($this->intervals);
-        $adjacentIntervals = $this->calcAdjacentIntervals($signedBounds);
+        $discreteValues = self::extractDiscreteValues($intervals);
+        $signedBounds = self::intervalsToSignedBounds($intervals);
+        $adjacentIntervals = self::calcAdjacentIntervals($signedBounds, $intervals, $aggregateFunction);
 
         // Remove empty interval generated when two or more intervals share a common bound.
         $adjacentIntervals = array_values(array_filter($adjacentIntervals, function ($i) {
@@ -346,14 +377,18 @@ class IntervalGraph implements \JsonSerializable
      * Create each new interval and calculate its value based on the active intervals on each bound.
      *
      * @param $bounds
+     * @param $intervals
+     * @param $aggregateFunction
      * @return array
      */
-    public function calcAdjacentIntervals($bounds)
+    public static function calcAdjacentIntervals(array $bounds, array $intervals, Closure $aggregateFunction)
     {
+        $origIntVals = [];
+            
         // Get the values of the original intervals, including nulls.
-        $origIntVals = array_map(function ($interval) {
-            return isset($interval[2]) ? $interval[2] : null;
-        }, $this->intervals);
+        foreach ($intervals as $interval) {
+            $origIntVals[] = isset($interval[2]) ? $interval[2] : null;
+        }
 
         $newIntervals = [];
         $activeIntervals = [];
@@ -382,7 +417,7 @@ class IntervalGraph implements \JsonSerializable
                 // Else, aggregate the values of the corresponding intervals.
                 $ival = array_reduce(
                     array_intersect_key($origIntVals, $activeIntervals),
-                    $this->aggregateFunction
+                    $aggregateFunction
                 );
             }
 
@@ -393,13 +428,75 @@ class IntervalGraph implements \JsonSerializable
     }
 
     /**
+     * Compute the numeric values of interval bounds and values.
+     * 
+     * @param $intervals
+     * @return array
+     */
+    public function computeNumericValues($intervals)
+    {
+        // Extract interval values.
+        $intervalValues = array_column($intervals, 2);
+
+        // Convert bounds to numeric values.
+        foreach ($intervals as $interval) {
+            $numericIntervals[] = [
+                ($this->boundToNumeric)($interval[0]),
+                ($this->boundToNumeric)($interval[1]),
+            ];
+        }
+
+        // Order by low bound.
+        uasort($numericIntervals, function (array $i1, array $i2) {
+            return ($i1[0] < $i2[0]) ? -1 : 1;
+        });
+        
+
+        // Order by high bound.
+        uasort($numericIntervals, function (array $i1, array $i2) {
+            return ($i1[1] < $i2[1]) ? -1 : 1;
+        });
+        
+
+        // Put values back in, along with the formatted bound.
+        // Since we're using associative sorting functions, we know the keys haven't changed.
+        foreach (array_keys($numericIntervals) as $index => $numKey) {
+            
+            list($lowNumericBound, $highNumericBound) = $numericIntervals[$index];
+
+            if ($lowNumericBound === $highNumericBound) {
+                
+                $numericIntervals[$index] = $lowNumericBound;
+                
+            } else {
+                
+                $numericIntervals[$index] = [
+                    $lowNumericBound,
+                    100 - $highNumericBound,
+                    $intervalValues[$numKey]
+                ];
+                
+            }
+        }
+
+        // Put discrete values at the end and reset indices.
+        // Reseting indices ensures the processed values are
+        // serialized as correctly ordered JSON arrays.
+        usort($numericIntervals, function ($i) {
+            return !is_array($i) ? 1 : -1;
+        });
+
+        return $numericIntervals;
+    }
+
+    /**
      * Define the function to convert the interval values to a numeric value
      * in order to match them to a color on the palette.
      *
-     * @param \Closure $valueToNumeric
+     * @param Closure $valueToNumeric
      * @return IntervalGraph
      */
-    public function setValueToNumeric(\Closure $valueToNumeric)
+    public function setValueToNumeric(Closure $valueToNumeric)
     {
         $this->valueToNumeric = $valueToNumeric;
         return $this;
@@ -409,10 +506,10 @@ class IntervalGraph implements \JsonSerializable
      * Define the  function to convert the interval values to strings
      * in order to display them in the view.
      *
-     * @param \Closure $valueToString
+     * @param Closure $valueToString
      * @return IntervalGraph
      */
-    public function setValueToString(\Closure $valueToString)
+    public function setValueToString(Closure $valueToString)
     {
         $this->valueToString = $valueToString;
         return $this;
@@ -421,10 +518,10 @@ class IntervalGraph implements \JsonSerializable
     /**
      * Define the function to aggregate interval values.
      *
-     * @param \Closure $aggregate
+     * @param Closure $aggregate
      * @return IntervalGraph
      */
-    public function setAggregate(\Closure $aggregate)
+    public function setAggregate(Closure $aggregate)
     {
         $this->aggregateFunction = $aggregate;
         return $this;
@@ -433,7 +530,7 @@ class IntervalGraph implements \JsonSerializable
     /**
      * Set the function to convert interval bound values to string.
      *
-     * @param \Closure $boundToString
+     * @param Closure $boundToString
      * @return IntervalGraph
      */
     public function setBoundToString($boundToString)
@@ -513,7 +610,7 @@ class IntervalGraph implements \JsonSerializable
     }
 
     /**
-     * @param \Closure $boundToNumeric
+     * @param Closure $boundToNumeric
      * @return IntervalGraph
      */
     public function setBoundToNumeric($boundToNumeric)
@@ -530,7 +627,7 @@ class IntervalGraph implements \JsonSerializable
     public function jsonSerialize()
     {
         if (!isset($this->values)) {
-            $this->process();
+            $this->createView();
         }
         return $this->values;
     }

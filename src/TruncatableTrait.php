@@ -1,12 +1,9 @@
 <?php
-/**
- * User: vtoulouse
- * Date: 25/01/2019
- * Time: 16:26
- */
 
 namespace Vctls\IntervalGraph;
 
+
+use InvalidArgumentException;
 
 trait TruncatableTrait
 {
@@ -76,7 +73,7 @@ trait TruncatableTrait
                 }
                 break;
             default:
-                throw new \InvalidArgumentException("Type should be 0 (low padding) or 1 (high padding).");
+                throw new InvalidArgumentException("Type should be 0 (low padding) or 1 (high padding).");
         }
     }
 
@@ -97,7 +94,7 @@ trait TruncatableTrait
                 return self::maxBound($intervals);
                 break;
             default:
-                throw new \InvalidArgumentException("Type must be 0 (min) or 1 (max)");
+                throw new InvalidArgumentException("Type must be 0 (min) or 1 (max)");
         }
     }
 
@@ -146,7 +143,7 @@ trait TruncatableTrait
                 return $value > $limit;
                 break;
             default :
-                throw new \InvalidArgumentException("Limit type must be 0 (lower) or 1 (upper)");
+                throw new InvalidArgumentException("Limit type must be 0 (lower) or 1 (upper)");
         }
     }
 }

@@ -2,6 +2,8 @@
 
 namespace Vctls\IntervalGraph;
 
+use LogicException;
+
 /**
  * Holds color information for the graph.
  *
@@ -83,7 +85,7 @@ class Palette
                 return $palette[$i][1];
             }
         }
-        throw new \LogicException("The percentage $percent did not match any range in the color palette.");
+        throw new LogicException("The percentage $percent did not match any range in the color palette.");
     }
 
 }

@@ -211,7 +211,9 @@ class IntervalGraph implements JsonSerializable
         $flatIntervals = $this->getFlatIntervals();
 
         // Extract values.
-        $t = array_column($flatIntervals, 2);
+        $originalValues = array_column($flatIntervals, 2);
+        
+        $numVals = [];
         
         // Change bounds to numeric values.
         foreach ($flatIntervals as $interval) {
@@ -255,32 +257,33 @@ class IntervalGraph implements JsonSerializable
 
         // Put values back in, along with the formatted bound.
         // Since we're using associative sorting functions, we know the keys haven't changed.
-        foreach (array_keys($numVals) as $index => $numKey) {
+        $numKeys = array_keys($numVals);
+        foreach ($numKeys as $numKey) {
             
             list($lowBound, $highBound) = $flatIntervals[$numKey];
-            list($startPercent, $endPercent) = $numVals[$index];
+            list($startPercent, $endPercent) = $numVals[$numKey];
             
             if ($lowBound === $highBound) {
                 
-                $numVals[$index] = [
+                $numVals[$numKey] = [
                     $startPercent, // Single value position percentage
                     ($this->boundToString)($lowBound), // Single value string
                 ];
                 
             } else {
                 
-                $colorval = isset($t[$numKey]) ? ($this->valueToNumeric)($t[$numKey]) : null;
-                $stingval = isset($t[$numKey]) ? ($this->valueToString)($t[$numKey]) : null;
+                $colval = isset($originalValues[$numKey]) ? ($this->valueToNumeric)($originalValues[$numKey]) : null;
+                $strval = isset($originalValues[$numKey]) ? ($this->valueToString)($originalValues[$numKey]) : null;
                 
-                $numVals[$index] = [
+                $numVals[$numKey] = [
                     $startPercent, // Interval start percentage
                     100 - $endPercent, // Interval end percentage from right
                     // Note: for some reason, using 'widht' instead of 'right'
                     // causes the right border to be hidden underneath the next interval.
-                    !empty($t) ? $this->palette->getColor($colorval) : 50, // Interval color
+                    !empty($originalValues) ? $this->palette->getColor($colval) : 50, // Interval color
                     ($this->boundToString)($lowBound), // Interval start string value
                     ($this->boundToString)($highBound), // Interval end string value
-                    !empty($t) ? ($stingval) : null,// Interval string value
+                    !empty($originalValues) ? ($strval) : null,// Interval string value
                 ];
             }
         }

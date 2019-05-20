@@ -36,20 +36,21 @@ class Date
     /**
      * Create an IntervalGraph for handling dates.
      *
-     * @param $args
+     * @param $intervals
      * @return IntervalGraph
      */
-    public static function intvg($args) {
-        $substractStep = function (DateTime $bound) {
+    public static function intvg($intervals = null) {
+        $intvg = new IntervalGraph();
+        $intvg->setSubstractStep(function (DateTime $bound) {
             return (clone $bound)->sub(new DateInterval('PT1S'));
-        };
-
-        $addStep = function (DateTime $bound) {
+        })
+            ->setAddStep(function (DateTime $bound) {
             return (clone $bound)->add(new DateInterval('PT1S'));
-        };
-        return (new IntervalGraph($args))
-            ->setAddStep($addStep)
-            ->setSubstractStep($substractStep);
+        });
+        if (isset($intervals)) {
+            $intvg->setIntervals($intervals);
+        }
+        return $intvg;
     }
 
     /**

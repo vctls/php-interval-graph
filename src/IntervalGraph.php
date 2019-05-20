@@ -2,10 +2,16 @@
 
 namespace Vctls\IntervalGraph;
 
+use Closure;
+use DateTime;
+use Exception;
+use InvalidArgumentException;
+use JsonSerializable;
+
 /**
  * A class to manipulate and display arrays of weighted intervals.
  */
-class IntervalGraph implements \JsonSerializable
+class IntervalGraph implements JsonSerializable
 {
     use TruncatableTrait;
     
@@ -18,19 +24,19 @@ class IntervalGraph implements \JsonSerializable
     /** @var string Path to the template used for rendering. */
     protected $template = 'template.php';
 
-    /** @var \Closure Return a numeric value from the inital bound value. */
+    /** @var Closure Return a numeric value from the inital bound value. */
     protected $boundToNumeric;
 
-    /** @var \Closure Return a string from the initial bound value. */
+    /** @var Closure Return a string from the initial bound value. */
     protected $boundToString;
 
-    /** @var \Closure Return a numeric value from an initial interval value. */
+    /** @var Closure Return a numeric value from an initial interval value. */
     protected $valueToNumeric;
 
-    /** @var \Closure Return a string value from an initial interval value. */
+    /** @var Closure Return a string value from an initial interval value. */
     protected $valueToString;
 
-    /** @var \Closure Aggregate interval values. */
+    /** @var Closure Aggregate interval values. */
     protected $aggregateFunction;
 
     /** @var Palette */
@@ -48,11 +54,11 @@ class IntervalGraph implements \JsonSerializable
             $this->setIntervals($intervals);
         }
 
-        $this->boundToNumeric = function (\DateTime $bound) {
+        $this->boundToNumeric = function (DateTime $bound) {
             return $bound->getTimestamp();
         };
 
-        $this->boundToString = function (\DateTime $bound) {
+        $this->boundToString = function (DateTime $bound) {
             return $bound->format("Y-m-d");
         };
 
@@ -95,7 +101,7 @@ class IntervalGraph implements \JsonSerializable
             // Check that the interval is an array.
             if (!is_array($interval)) {
                 $t = gettype($interval);
-                throw new \InvalidArgumentException(
+                throw new InvalidArgumentException(
                     "Each element of the '\$intervals' array should be an array, $t given."
                 );
             }
@@ -115,7 +121,7 @@ class IntervalGraph implements \JsonSerializable
 
                     try {
                         $value = ($this->{"$property[1]To$expectedTypeTitle"})($interval[$index]);
-                    } catch (\Exception $exception) {
+                    } catch (Exception $exception) {
                         // FIXME Handle Type errors?
                         throw new PropertyConversionException(
                             "$property[0] of interval $intervalKey cannot be converted to a $expectedType value " .
@@ -157,7 +163,7 @@ class IntervalGraph implements \JsonSerializable
     {
         try {
             $html = $this->draw();
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
             $html = "Error : " . $e->getMessage();
         }
         return $html;
@@ -396,10 +402,10 @@ class IntervalGraph implements \JsonSerializable
      * Define the function to convert the interval values to a numeric value
      * in order to match them to a color on the palette.
      *
-     * @param \Closure $valueToNumeric
+     * @param Closure $valueToNumeric
      * @return IntervalGraph
      */
-    public function setValueToNumeric(\Closure $valueToNumeric)
+    public function setValueToNumeric(Closure $valueToNumeric)
     {
         $this->valueToNumeric = $valueToNumeric;
         return $this;
@@ -409,10 +415,10 @@ class IntervalGraph implements \JsonSerializable
      * Define the  function to convert the interval values to strings
      * in order to display them in the view.
      *
-     * @param \Closure $valueToString
+     * @param Closure $valueToString
      * @return IntervalGraph
      */
-    public function setValueToString(\Closure $valueToString)
+    public function setValueToString(Closure $valueToString)
     {
         $this->valueToString = $valueToString;
         return $this;
@@ -421,10 +427,10 @@ class IntervalGraph implements \JsonSerializable
     /**
      * Define the function to aggregate interval values.
      *
-     * @param \Closure $aggregate
+     * @param Closure $aggregate
      * @return IntervalGraph
      */
-    public function setAggregate(\Closure $aggregate)
+    public function setAggregate(Closure $aggregate)
     {
         $this->aggregateFunction = $aggregate;
         return $this;
@@ -433,7 +439,7 @@ class IntervalGraph implements \JsonSerializable
     /**
      * Set the function to convert interval bound values to string.
      *
-     * @param \Closure $boundToString
+     * @param Closure $boundToString
      * @return IntervalGraph
      */
     public function setBoundToString($boundToString)
@@ -513,7 +519,7 @@ class IntervalGraph implements \JsonSerializable
     }
 
     /**
-     * @param \Closure $boundToNumeric
+     * @param Closure $boundToNumeric
      * @return IntervalGraph
      */
     public function setBoundToNumeric($boundToNumeric)

@@ -3,6 +3,8 @@
 namespace Vctls\IntervalGraph;
 
 
-class PropertyConversionException extends \InvalidArgumentException
+use InvalidArgumentException;
+
+class PropertyConversionException extends InvalidArgumentException
 {
 }

@@ -22,12 +22,12 @@ class Palette
      * the color of this discrete value.
      */
     protected $palette = [
-        [0, '#ff5450'],
-        [0, '#ff5450'],
-        [50, '#ff9431'],
-        [100, '#d7e174'],
-        [100, '#5cb781'],
-        [100, '#557ebf'],
+        [0, 'color_0'],
+        [0, 'color_0'],
+        [50, 'color_1'],
+        [100, 'color_2'],
+        [100, 'color_3'],
+        [100, 'color_4'],
     ];
 
     protected $bgColor = '#e1e0eb';

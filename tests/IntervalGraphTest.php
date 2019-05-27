@@ -46,9 +46,9 @@ class IntervalGraphTest extends TestCase
         $values = $intervalGraph->createView()->checkIntervals()->getValues();
 
         $expected = [
-            [0, 67, "#ff9431", "0", "1", "1"],
-            [33, 33, "#ff9431", "1", "2", "2"],
-            [67, 0, "#ff9431", "2", "3", "1"]
+            [0, 67, "color_1", "0", "1", "1"],
+            [33, 33, "color_1", "1", "2", "2"],
+            [67, 0, "color_1", "2", "3", "1"]
         ];
 
         $this->assertEquals($expected, $values, "Generated values don't match the expected result.");

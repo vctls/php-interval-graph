@@ -193,7 +193,7 @@ foreach (range(0, 20) as $t) {
 <script>
     'use strict';
     const graphs = JSON.parse('<?= json_encode($intvGraphs) ?>');
-    const el = document.getElementByIU::d('random');
+    const el = document.getElementById('random');
 
     try {
         graphs.forEach(function (graph) {

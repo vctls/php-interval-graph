@@ -29,6 +29,23 @@
     box-sizing: border-box;
 }
 
+/* Colors */
+.color_0 {
+    background-color: #ff5450;
+}
+.color_1 {
+    background-color: #ff9431;
+}
+.color_2 {
+    background-color: #d7e174;
+}
+.color_3 {
+    background-color: #5cb781;
+}
+.color_4 {
+    background-color: #557ebf;
+}
+
 /* Popup */
 /* Use bootstrap tooltips or equivalent for better results. */
 .bar:hover:after {

@@ -9,22 +9,22 @@ use Vctls\IntervalGraph\Util\Date as D;
 
 $today = new DateTime('today');
 
-$base = D::intv(0,5);
-$intv1 = D::intv(0,4, 7/10);
-$intv2 = D::intv(1,5,3/10);
-$intv3 = D::intv(2,3,3/10);
+$base = D::intv(0, 5);
+$intv1 = D::intv(0, 4, 7 / 10);
+$intv2 = D::intv(1, 5, 3 / 10);
+$intv3 = D::intv(2, 3, 3 / 10);
 $overlapped1 = D::intvg([$base, $intv1]);
 $overlapped2 = D::intvg([$base, $intv2]);
 $overlapped3 = D::intvg([$base, $intv3]);
 $overlapped = D::intvg([$base, $intv1, $intv2, $intv3]);
 
-$withNull1 = D::intvg([$base, D::intv(0,3,4/10)]);
-$withNull2 = D::intvg([$base, D::intv(1,2)]);
-$withNull3 = D::intvg([$base, D::intv(2,3,4/10)]);
-$withNull4 = D::intvg([$base, D::intv(4,5,5/10)]);
+$withNull1 = D::intvg([$base, D::intv(0, 3, 4 / 10)]);
+$withNull2 = D::intvg([$base, D::intv(1, 2)]);
+$withNull3 = D::intvg([$base, D::intv(2, 3, 4 / 10)]);
+$withNull4 = D::intvg([$base, D::intv(4, 5, 5 / 10)]);
 $withNullIntervals = D::intvg([
-    [$today, new DateTime('today + 3 days'), 4 / 10],
-    [new DateTime('today + 1 day'), new DateTime('today + 2 days')],
+    D::intv(0, 3, 4 / 10),
+    D::intv(1, 2),
     D::intv(2, 3, 4 / 10),
     D::intv(4, 5, 5 / 10),
 ]);
@@ -66,7 +66,6 @@ $toString = function ($a) {
 };
 
 $fractions = [
-    [$today, new DateTime('today + 3 days'), [2, 10]],
     D::intv(1, 4, [2, 10]),
     D::intv(2, 5, [3, 10]),
     D::intv(3, 6, [5, 10]),
@@ -74,7 +73,8 @@ $fractions = [
     D::intv(5, 8, [2, 10]),
     D::intv(6, 9, [2, 10]),
 ];
-$fractim = (D::intvg($fractions))->setAggregate($agg)
+$fractim = (D::intvg($fractions))
+    ->setAggregate($agg)
     ->setValueToNumeric($toNumeric)
     ->setValueToString($toString);
 $fract = $fractim->draw();
@@ -97,7 +97,7 @@ $truncated = ($fractim->setIntervals(IntervalGraph::truncate($fractions, $intv1,
 
 $withDates = (D::intvg([
     [$intv1, $intv1],
-    D::intv(0,4,7/10),
+    D::intv(0, 4, 7 / 10),
     [$intv2, $intv2],
     D::intv(1, 5, 3 / 10),
     D::intv(2, 3, 3 / 10),
@@ -114,6 +114,7 @@ foreach (range(0, 20) as $t) {
     }
     $intvGraphs[] = (D::intvg($intervals))->checkIntervals();
 }
+
 
 ?>
 <!doctype html>
@@ -185,6 +186,44 @@ foreach (range(0, 20) as $t) {
     <br>One of the dates goes beyond all intervals.
     <?= $withDates ?>
 </p>
+
+<?php
+
+/* ADDITIONAL INFORMATION */
+$toString2 = function ($a) {
+    if ($a === null) {
+        return null;
+    }
+    return $a[0] . '/' . $a[1] . ($a[2] ? '*' : '');
+};
+
+$agg2 = function ($a, $b) {
+    if ($a === null && $b === null) return null;
+    return [
+        $a[0] + $b[0],
+        $b[1],
+        $a[2] || $b[2]
+    ];
+};
+
+$addInfo = D::intvg([
+    D::intv(0, 3),
+    D::intv(0, 2, [1, 3, false]),
+    D::intv(1, 3, [2, 5, true]),
+])
+    ->setValueToString($toString2)
+    ->setValueToNumeric($toNumeric)
+    ->setAggregate($agg2);
+?>
+
+<h2>Passing additional information</h2>
+<p>
+    You can take advantage of the closures and templates to display additional information on the graph.
+    Here for example, interval values hold a boolean. Depending on the boolean, an asterisk is added to the string,
+    and a class is set on the corresponding bars.
+    <?= $addInfo ?>
+</p>
+
 <p>
     A bunch of random graphs, this time generated through JavaScript:
     <br>
@@ -193,7 +232,7 @@ foreach (range(0, 20) as $t) {
 <script>
     'use strict';
     const graphs = JSON.parse('<?= json_encode($intvGraphs) ?>');
-    const el = document.getElementByIU::d('random');
+    const el = document.getElementById('random');
 
     try {
         graphs.forEach(function (graph) {

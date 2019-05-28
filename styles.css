@@ -29,6 +29,32 @@
     box-sizing: border-box;
 }
 
+/* Colors */
+.color_0 {
+    background-color: #ff5450;
+}
+.color_1 {
+    background-color: #ff9431;
+}
+.color_2 {
+    background-color: #d7e174;
+}
+.color_3 {
+    background-color: #5cb781;
+}
+.color_4 {
+    background-color: #557ebf;
+}
+
+/* Stripes */
+.striped {
+    background-image: repeating-linear-gradient(-45deg, rgba(0, 0, 0, 0.5), rgba(0, 0, 0, 0.5) 5px, rgba(255, 255, 255, 0) 0px, rgba(255, 255, 255, 0) 10px);
+}
+
+.striped_wide {
+    background-image: repeating-linear-gradient(165deg, #ccc, #ccc 30px, #dbdbdb 30px, #dbdbdb 60px);
+}
+
 /* Popup */
 /* Use bootstrap tooltips or equivalent for better results. */
 .bar:hover:after {

@@ -23,8 +23,8 @@ $withNull2 = D::intvg([$base, D::intv(1,2)]);
 $withNull3 = D::intvg([$base, D::intv(2,3,4/10)]);
 $withNull4 = D::intvg([$base, D::intv(4,5,5/10)]);
 $withNullIntervals = D::intvg([
-    [$today, new DateTime('today + 3 days'), 4 / 10],
-    [new DateTime('today + 1 day'), new DateTime('today + 2 days')],
+    D::intv(0,3,4/10),
+    D::intv(1,2),
     D::intv(2, 3, 4 / 10),
     D::intv(4, 5, 5 / 10),
 ]);

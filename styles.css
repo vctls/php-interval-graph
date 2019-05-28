@@ -48,7 +48,7 @@
 
 /* Stripes */
 .striped {
-    background-image: repeating-linear-gradient(-45deg, #000, #000 1px, rgba(255, 255, 255, 0) 1px, rgba(255, 255, 255, 0) 6px);
+    background-image: repeating-linear-gradient(-45deg, rgba(0, 0, 0, 0.5), rgba(0, 0, 0, 0.5) 5px, rgba(255, 255, 255, 0) 0px, rgba(255, 255, 255, 0) 10px);
 }
 
 .striped_wide {

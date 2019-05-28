@@ -213,8 +213,7 @@ $addInfo = D::intvg([
 ])
     ->setValueToString($toString2)
     ->setValueToNumeric($toNumeric)
-    ->setAggregate($agg2)
-    ->setTemplate('./customTemplate.php');
+    ->setAggregate($agg2);
 ?>
 
 <h2>Passing additional information</h2>

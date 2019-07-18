@@ -23,13 +23,10 @@ class Date
      * @param mixed $value
      * @return array
      */
-    public static function intv(int $start, int $end, $value = null)
+    public static function intv(int $start, int $end, $value = null): array
     {
-        try {
-            $start = new DateTime("today + $start days");
-            $end = (new DateTime("today + $end days"))->setTime(23,59,59);
-        } catch (Exception $e) {}
-        
+        $start = new DateTime("today + $start days");
+        $end = (new DateTime("today + $end days"))->setTime(23,59,59);
         return [$start, $end, $value];
     }
 
@@ -39,12 +36,13 @@ class Date
      * @param $intervals
      * @return IntervalGraph
      */
-    public static function intvg($intervals = null) {
+    public static function intvg($intervals = null): IntervalGraph
+    {
         $intvg = new IntervalGraph();
-        $intvg->setSubstractStep(function (DateTime $bound) {
+        $intvg->setSubstractStep(static function (DateTime $bound) {
             return (clone $bound)->sub(new DateInterval('PT1S'));
         })
-            ->setAddStep(function (DateTime $bound) {
+            ->setAddStep(static function (DateTime $bound) {
             return (clone $bound)->add(new DateInterval('PT1S'));
         });
         if (isset($intervals)) {
@@ -60,10 +58,10 @@ class Date
      * @param int $max
      * @return DateTime
      */
-    public static function rdm($min = 1514764800, $max = 1577750400)
+    public static function rdm($min = 1514764800, $max = 1577750400): ?DateTime
     {
         try {
-            return $date = (new DateTime)->setTimestamp(mt_rand($min, $max));
+            return (new DateTime)->setTimestamp(random_int($min, $max));
         } catch (Exception $e) {
             return null;
         }

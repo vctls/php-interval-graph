@@ -40,24 +40,23 @@ class Palette
      *  [ 50, '#ff9431' ]
      *
      * For discrete values, simply insert the same value twice.
+     * 
+     * Make sure values are in the correct order.
      *
      * @param array $palette
      * @return Palette
      */
     public function setColors(array $palette): Palette
     {
-        usort($palette, static function ($p1, $p2) {
-            return $p2[0] - $p1[0];
-        });
         $this->palette = $palette;
         return $this;
     }
 
     /**
-     * @param $color
+     * @param string $color A color reference or hex code.
      * @return $this
      */
-    public function setBGColor($color): self
+    public function setBGColor(string $color): self
     {
         $this->bgColor = $color;
         return $this;
@@ -65,22 +64,21 @@ class Palette
 
     /**
      * Get the hexadecimal color code for the given percentage.
-     * TODO Maybe consider using a segment tree for better performance.
      *
      * @param integer $percent
      * @return string
      */
-    public function getColor($percent): string
+    public function getColor(int $percent = null): string
     {
-        $palette = $this->palette;
+        $pal = $this->palette;
         if ($percent === null) {
             return $this->bgColor ?? '';
         }
-        foreach ($palette as $i => $iValue) {
+        foreach ($pal as $i => $iValue) {
             if (($i === 0 && $percent < $iValue[0])
-                || ($i > 0 && $iValue[0] === $palette[$i - 1][0] && $percent === $iValue[0])
-                || ($i > 0 && $iValue[0] !== $palette[$i - 1][0] && $percent < $iValue[0])
-                || ($i === (count($palette) - 1) && $percent > $iValue[0])
+                || ($i > 0 && $iValue[0] === $pal[$i - 1][0] && $percent === $iValue[0])
+                || ($i > 0 && $iValue[0] !== $pal[$i - 1][0] && $percent < $iValue[0])
+                || ($i === (count($pal) - 1) && $percent > $iValue[0])
             ) {
                 return $iValue[1];
             }

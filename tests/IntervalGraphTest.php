@@ -15,10 +15,8 @@ use Vctls\IntervalGraph\Util\Date as D;
  */
 class IntervalGraphTest extends TestCase
 {
-    /**
-     * @throws Exception
-     */
-    public function testCreate()
+
+    public function testCreate(): void
     {
         $longIntervals = [
             [new DateTime('today'), new DateTime('today + 3 days'), 2 / 10],
@@ -37,10 +35,8 @@ class IntervalGraphTest extends TestCase
     /**
      * Test calculation of values from simple numeric intervals.
      * TODO Separate calculation of values and visual information.
-     *
-     * @throws Exception
      */
-    public function testSimpleIntegerSumIntervals()
+    public function testSimpleIntegerSumIntervals(): void
     {
         $intervalGraph = $this->getSimpleIntegerSumIntervalGraph();
         $values = $intervalGraph->createView()->checkIntervals()->getValues();
@@ -59,7 +55,7 @@ class IntervalGraphTest extends TestCase
      * 
      * @return IntervalGraph
      */
-    public function getSimpleIntegerSumIntervalGraph()
+    public function getSimpleIntegerSumIntervalGraph(): IntervalGraph
     {
         $intervals = [
             [0, 2, 1],
@@ -89,7 +85,7 @@ class IntervalGraphTest extends TestCase
      * Provide interval sets to test truncation.
      * @return array
      */
-    public function truncationProvider()
+    public function truncationProvider(): array
     {
         $d = static function ($dateString) {
             return DateTime::createFromFormat('Y-m-d h:i:s', $dateString . ' 00:00:00');
@@ -120,16 +116,13 @@ class IntervalGraphTest extends TestCase
      * @param bool $padding
      * @param array $expected
      */
-    public function testTruncate(array $intervals, array $limits, bool $padding, array $expected)
+    public function testTruncate(array $intervals, array $limits, bool $padding, array $expected): void
     {
         $truncated = IntervalGraph::truncate($intervals, $limits[0], $limits[1], $padding);
         $this->assertEquals($expected, $truncated, "Generated values don't match the expected result.");
     }
-
-    /**
-     * @throws Exception
-     */
-    public function testFlatIntervals()
+    
+    public function testFlatIntervals(): void
     {
         $d = static function ($dateString) {
             return DateTime::createFromFormat('Y-m-d h:i:s', $dateString . ' 00:00:00');
@@ -163,7 +156,7 @@ class IntervalGraphTest extends TestCase
      * It MUST throw an InvalidArgumentException if the intervals are incorrect.
      * It MUST NOT throw any exception if the intervals are correct.
      */
-    public function testCheck()
+    public function testCheck(): void
     {
         $exception = null;
         $badArgument = ['something something'];
@@ -179,7 +172,7 @@ class IntervalGraphTest extends TestCase
         // TODO Check that bounds and values are compatible with the given conversion closures.
     }
     
-    public function testComputeNumericValues()
+    public function testComputeNumericValues(): void
     {
         $d = static function ($dateString) {
             return DateTime::createFromFormat('Y-m-d h:i:s', $dateString . ' 00:00:00');

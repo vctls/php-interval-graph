@@ -196,5 +196,28 @@ class IntervalGraphTest extends TestCase
         
         $this->assertEquals($expected, $values, "Generated values don't match the expected result.");
     }
+
+    /**
+     * Test HTML rendering with the default template.
+     */
+    public function testToString(): void
+    {
+        $longIntervals = [
+            D::intv(1, 4, 2 / 10),
+            D::intv(2, 5, 3 / 10),
+            D::intv(3, 6, 5 / 10),
+        ];
+        
+        $html= "<div class='intvg'>" .
+            "<div class='bar bar-intv bar0 color_1 ' style='left:0;right:83%' data-title=\"2019-07-19 ➔ 2019-07-20 : 20%\"></div>" .
+            "<div class='bar bar-intv bar1 color_2 ' style='left:17%;right:67%' data-title=\"2019-07-20 ➔ 2019-07-21 : 50%\"></div>" .
+            "<div class='bar bar-intv bar2 color_3 ' style='left:33%;right:33%' data-title=\"2019-07-21 ➔ 2019-07-22 : 100%\"></div>" .
+            "<div class='bar bar-intv bar3 color_2 ' style='left:67%;right:17%' data-title=\"2019-07-22 ➔ 2019-07-23 : 80%\"></div>" .
+            "<div class='bar bar-intv bar4 color_2 ' style='left:83%;right:0' data-title=\"2019-07-23 ➔ 2019-07-24 : 50%\"></div>" .
+            '</div>';
+        
+        $intervalGraph = new IntervalGraph($longIntervals);
+        $this->assertEquals($html, (string)$intervalGraph);
+    }
     
 }

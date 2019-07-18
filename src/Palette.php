@@ -44,9 +44,9 @@ class Palette
      * @param array $palette
      * @return Palette
      */
-    public function setColors(array $palette)
+    public function setColors(array $palette): Palette
     {
-        usort($palette, function ($p1, $p2) {
+        usort($palette, static function ($p1, $p2) {
             return $p2[0] - $p1[0];
         });
         $this->palette = $palette;
@@ -57,7 +57,7 @@ class Palette
      * @param $color
      * @return $this
      */
-    public function setBGColor($color)
+    public function setBGColor($color): self
     {
         $this->bgColor = $color;
         return $this;
@@ -70,19 +70,19 @@ class Palette
      * @param integer $percent
      * @return string
      */
-    public function getColor($percent)
+    public function getColor($percent): string
     {
         $palette = $this->palette;
         if ($percent === null) {
-            return isset($this->bgColor) ? $this->bgColor : '';
+            return $this->bgColor ?? '';
         }
-        for ($i = 0; $i < count($palette); $i++) {
-            if ($i === 0 && $percent < $palette[$i][0]
-                || $i > 0 && $palette[$i][0] === $palette[$i - 1][0] && $percent === $palette[$i][0]
-                || $i > 0 && $palette[$i][0] !== $palette[$i - 1][0] && $percent < $palette[$i][0]
-                || $i === (count($palette) - 1) && $percent > $palette[$i][0]
+        foreach ($palette as $i => $iValue) {
+            if (($i === 0 && $percent < $iValue[0])
+                || ($i > 0 && $iValue[0] === $palette[$i - 1][0] && $percent === $iValue[0])
+                || ($i > 0 && $iValue[0] !== $palette[$i - 1][0] && $percent < $iValue[0])
+                || ($i === (count($palette) - 1) && $percent > $iValue[0])
             ) {
-                return $palette[$i][1];
+                return $iValue[1];
             }
         }
         throw new LogicException("The percentage $percent did not match any range in the color palette.");

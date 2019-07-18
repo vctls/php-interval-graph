@@ -16,7 +16,7 @@ trait TruncatableTrait
      * @param bool $padding Add null value intervals between the bounds and the first and last bounds.
      * @return array
      */
-    public static function truncate(array $intervals, $lowerLimit = null, $upperLimit = null, $padding = false)
+    public static function truncate(array $intervals, $lowerLimit = null, $upperLimit = null, $padding = false): array
     {
         $limits = [
             0 => $lowerLimit,
@@ -57,7 +57,7 @@ trait TruncatableTrait
      * @param $value
      * @param $type
      */
-    public static function pad(&$intervals, $value, $type)
+    public static function pad(&$intervals, $value, $type): void
     {
         switch ($type) {
             case 0:
@@ -69,11 +69,11 @@ trait TruncatableTrait
             case 1:
                 $bound = self::maxBound($intervals);
                 if (isset($bound) && $bound < $value) {
-                    array_push($intervals, [$bound, $value]);
+                    $intervals[] = [$bound, $value];
                 }
                 break;
             default:
-                throw new InvalidArgumentException("Type should be 0 (low padding) or 1 (high padding).");
+                throw new InvalidArgumentException('Type should be 0 (low padding) or 1 (high padding).');
         }
     }
 
@@ -94,7 +94,7 @@ trait TruncatableTrait
                 return self::maxBound($intervals);
                 break;
             default:
-                throw new InvalidArgumentException("Type must be 0 (min) or 1 (max)");
+                throw new InvalidArgumentException('Type must be 0 (min) or 1 (max)');
         }
     }
 
@@ -133,7 +133,7 @@ trait TruncatableTrait
      * @param int $type 0 (lower limit) or 1 (upper limit)
      * @return bool
      */
-    private static function compareToLimit($value, $limit, int $type)
+    private static function compareToLimit($value, $limit, int $type): bool
     {
         switch ($type) {
             case 0 :
@@ -143,7 +143,7 @@ trait TruncatableTrait
                 return $value > $limit;
                 break;
             default :
-                throw new InvalidArgumentException("Limit type must be 0 (lower) or 1 (upper)");
+                throw new InvalidArgumentException('Limit type must be 0 (lower) or 1 (upper)');
         }
     }
 }

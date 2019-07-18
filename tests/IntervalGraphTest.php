@@ -31,7 +31,7 @@ class IntervalGraphTest extends TestCase
         ];
 
         $intervalGraph = new IntervalGraph($longIntervals);
-        $this->assertTrue($intervalGraph instanceof IntervalGraph, 'An IntervalGraph could not be created.');
+        $this->assertInstanceOf(IntervalGraph::class, $intervalGraph, 'An IntervalGraph could not be created.');
     }
 
     /**
@@ -46,9 +46,9 @@ class IntervalGraphTest extends TestCase
         $values = $intervalGraph->createView()->checkIntervals()->getValues();
 
         $expected = [
-            [0, 67, "color_1", "0", "1", "1"],
-            [33, 33, "color_1", "1", "2", "2"],
-            [67, 0, "color_1", "2", "3", "1"]
+            [0, 67, 'color_1', '0', '1', '1'],
+            [33, 33, 'color_1', '1', '2', '2'],
+            [67, 0, 'color_1', '2', '3', '1']
         ];
 
         $this->assertEquals($expected, $values, "Generated values don't match the expected result.");
@@ -67,19 +67,19 @@ class IntervalGraphTest extends TestCase
         ];
 
         return (new IntervalGraph($intervals))
-            ->setBoundToNumeric(function (int $bound) {
+            ->setBoundToNumeric(static function (int $bound) {
                 return $bound;
             })
-            ->setBoundToString(function (int $bound) {
+            ->setBoundToString(static function (int $bound) {
                 return (string)$bound;
             })
-            ->setValueToNumeric(function (int $value) {
+            ->setValueToNumeric(static function (int $value) {
                 return $value;
             })
-            ->setValueToString(function (int $value) {
+            ->setValueToString(static function (int $value) {
                 return (string)$value;
             })
-            ->setAggregate(function ($a, $b) {
+            ->setAggregate(static function ($a, $b) {
                 return $a + $b;
             });
 
@@ -91,7 +91,7 @@ class IntervalGraphTest extends TestCase
      */
     public function truncationProvider()
     {
-        $d = function ($dateString) {
+        $d = static function ($dateString) {
             return DateTime::createFromFormat('Y-m-d h:i:s', $dateString . ' 00:00:00');
         };
 
@@ -131,7 +131,7 @@ class IntervalGraphTest extends TestCase
      */
     public function testFlatIntervals()
     {
-        $d = function ($dateString) {
+        $d = static function ($dateString) {
             return DateTime::createFromFormat('Y-m-d h:i:s', $dateString . ' 00:00:00');
         };
 
@@ -147,12 +147,12 @@ class IntervalGraphTest extends TestCase
          * @var DateTime $lowBound
          * @var DateTime $highBound
          */
-        list($lowBound, $highBound) = $flat[2];
+        [$lowBound, $highBound] = $flat[2];
         
-        $this->assertTrue($flat[2][0] instanceof DateTime);
+        $this->assertInstanceOf(DateTime::class, $flat[2][0]);
         $this->assertEquals('1970-01-03', $lowBound->format('Y-m-d'));
         
-        $this->assertTrue($flat[2][1] instanceof DateTime);
+        $this->assertInstanceOf(DateTime::class, $flat[2][1]);
         $this->assertEquals('1970-01-04', $highBound->format('Y-m-d'));
         
         $this->assertEquals(4, $flat[2][2]);
@@ -181,7 +181,7 @@ class IntervalGraphTest extends TestCase
     
     public function testComputeNumericValues()
     {
-        $d = function ($dateString) {
+        $d = static function ($dateString) {
             return DateTime::createFromFormat('Y-m-d h:i:s', $dateString . ' 00:00:00');
         };
 
@@ -191,7 +191,7 @@ class IntervalGraphTest extends TestCase
             [$d('1970-01-03'), $d('1970-01-05'), 2],
         ];
         
-        $values = (D::intvg($intervals))->computeNumericValues();
+        $values = D::intvg($intervals)->computeNumericValues();
         
         $expected = [
             [0, 86399, 0],

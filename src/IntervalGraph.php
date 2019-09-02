@@ -282,7 +282,7 @@ class IntervalGraph implements JsonSerializable
         // Calculate percentages.
         foreach ($numVals as $i => $numVal) {
             foreach ($numVal as $j => $value) {
-                $numVal[$j] = round($value * 100 / $max);
+                $numVal[$j] = round($value * 100 / $max, 2);
             }
             $numVals[$i] = $numVal;
         }

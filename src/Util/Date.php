@@ -25,8 +25,8 @@ class Date
      */
     public static function intv(int $start, int $end, $value = null): array
     {
-        $start = new DateTime("today + $start days");
-        $end = (new DateTime("today + $end days"))->setTime(23,59,59);
+        $start = DateTime::createFromFormat('Y-m-d', '2019-01-01')->add(new DateInterval('P' . $start . 'D'))->setTime(0,0);
+        $end = DateTime::createFromFormat('Y-m-d', '2019-01-01')->add(new DateInterval('P' . $end . 'D'))->setTime(23,59,59);
         return [$start, $end, $value];
     }
 

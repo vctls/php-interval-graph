@@ -42,17 +42,17 @@ class IntervalGraphTest extends TestCase
         $values = $intervalGraph->createView()->checkIntervals()->getValues();
 
         $expected = [
-            [0, 67, 'color_1', '0', '1', '1'],
-            [33, 33, 'color_1', '1', '2', '2'],
-            [67, 0, 'color_1', '2', '3', '1']
+            [0, 66.67, 'color_1', '0', '1', '1'],
+            [33.33, 33.33, 'color_1', '1', '2', '2'],
+            [66.67, 0, 'color_1', '2', '3', '1']
         ];
 
         $this->assertEquals($expected, $values, "Generated values don't match the expected result.");
     }
 
     /**
-     * Create an IntervalGraph to aggregate simple integer values. 
-     * 
+     * Create an IntervalGraph to aggregate simple integer values.
+     *
      * @return IntervalGraph
      */
     public function getSimpleIntegerSumIntervalGraph(): IntervalGraph
@@ -121,7 +121,7 @@ class IntervalGraphTest extends TestCase
         $truncated = IntervalGraph::truncate($intervals, $limits[0], $limits[1], $padding);
         $this->assertEquals($expected, $truncated, "Generated values don't match the expected result.");
     }
-    
+
     public function testFlatIntervals(): void
     {
         $d = static function ($dateString) {
@@ -141,13 +141,13 @@ class IntervalGraphTest extends TestCase
          * @var DateTime $highBound
          */
         [$lowBound, $highBound] = $flat[2];
-        
+
         $this->assertInstanceOf(DateTime::class, $flat[2][0]);
         $this->assertEquals('1970-01-03', $lowBound->format('Y-m-d'));
-        
+
         $this->assertInstanceOf(DateTime::class, $flat[2][1]);
         $this->assertEquals('1970-01-04', $highBound->format('Y-m-d'));
-        
+
         $this->assertEquals(4, $flat[2][2]);
     }
 
@@ -161,17 +161,17 @@ class IntervalGraphTest extends TestCase
         $exception = null;
         $badArgument = ['something something'];
         $intervalGraph = new IntervalGraph($badArgument);
-        
+
         try {
             $intervalGraph->checkIntervals();
         } catch (Exception $exception) {
         }
-        
+
         $this->assertInstanceOf(InvalidArgumentException::class, $exception);
 
         // TODO Check that bounds and values are compatible with the given conversion closures.
     }
-    
+
     public function testComputeNumericValues(): void
     {
         $d = static function ($dateString) {
@@ -183,9 +183,9 @@ class IntervalGraphTest extends TestCase
             [$d('1970-01-02'), $d('1970-01-04'), 2],
             [$d('1970-01-03'), $d('1970-01-05'), 2],
         ];
-        
+
         $values = D::intvg($intervals)->computeNumericValues();
-        
+
         $expected = [
             [0, 86399, 0],
             [86400, 172799, 2],
@@ -193,7 +193,7 @@ class IntervalGraphTest extends TestCase
             [259201, 345600, 2],
             [345601, 432000, 0]
         ];
-        
+
         $this->assertEquals($expected, $values, "Generated values don't match the expected result.");
     }
 
@@ -207,17 +207,17 @@ class IntervalGraphTest extends TestCase
             D::intv(2, 5, 3 / 10),
             D::intv(3, 6, 5 / 10),
         ];
-        
-        $html= "<div class='intvg'>" .
-            "<div class='bar bar-intv bar0 color_1 ' style='left:0;right:83%' data-title=\"2019-07-19 ➔ 2019-07-20 : 20%\"></div>" .
-            "<div class='bar bar-intv bar1 color_2 ' style='left:17%;right:67%' data-title=\"2019-07-20 ➔ 2019-07-21 : 50%\"></div>" .
-            "<div class='bar bar-intv bar2 color_3 ' style='left:33%;right:33%' data-title=\"2019-07-21 ➔ 2019-07-22 : 100%\"></div>" .
-            "<div class='bar bar-intv bar3 color_2 ' style='left:67%;right:17%' data-title=\"2019-07-22 ➔ 2019-07-23 : 80%\"></div>" .
-            "<div class='bar bar-intv bar4 color_2 ' style='left:83%;right:0' data-title=\"2019-07-23 ➔ 2019-07-24 : 50%\"></div>" .
+
+        $html = "<div class='intvg'>" .
+            "<div class='bar bar-intv bar0 color_1 ' style='left:0;right:83.33%' data-title=\"2019-01-02 ➔ 2019-01-03 : 20%\"></div>" .
+            "<div class='bar bar-intv bar1 color_2 ' style='left:16.67%;right:66.67%' data-title=\"2019-01-03 ➔ 2019-01-04 : 50%\"></div>" .
+            "<div class='bar bar-intv bar2 color_3 ' style='left:33.33%;right:33.33%' data-title=\"2019-01-04 ➔ 2019-01-05 : 100%\"></div>" .
+            "<div class='bar bar-intv bar3 color_2 ' style='left:66.67%;right:16.67%' data-title=\"2019-01-05 ➔ 2019-01-06 : 80%\"></div>" .
+            "<div class='bar bar-intv bar4 color_2 ' style='left:83.33%;right:0' data-title=\"2019-01-06 ➔ 2019-01-07 : 50%\"></div>" .
             '</div>';
-        
+
         $intervalGraph = new IntervalGraph($longIntervals);
         $this->assertEquals($html, (string)$intervalGraph);
     }
-    
+
 }

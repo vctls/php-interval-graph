@@ -1,5 +1,6 @@
 # PHP Interval Graph
 [![Build Status](https://travis-ci.org/vctls/php-interval-graph.svg?branch=master)](https://travis-ci.org/vctls/php-interval-graph) [![Quality Gate](https://sonarcloud.io/api/project_badges/measure?project=php-interval-graph&metric=alert_status)](https://sonarcloud.io/dashboard?id=php-interval-graph) [![Coverage](https://sonarcloud.io/api/project_badges/measure?project=php-interval-graph&metric=coverage)](https://sonarcloud.io/dashboard?id=php-interval-graph)
+[![Scrutinizer Code Quality](https://scrutinizer-ci.com/g/vctls/php-interval-graph/badges/quality-score.png?b=master)](https://scrutinizer-ci.com/g/vctls/php-interval-graph/?branch=master)
 
 A small utility to manipulate and display arrays of weighted intervals.
 
@@ -27,9 +28,9 @@ The `__toString()` method will also call `draw()`.
 use Vctls\IntervalGraph\IntervalGraph;
 
 $intervals = [
-    [new \DateTime(2018-01-01), new \DateTime(2018-01-04), 0.3],
-    [new \DateTime(2018-01-02), new \DateTime(2018-01-05), 0.5],
-    [new \DateTime(2018-01-03), new \DateTime(2018-01-06), 0.2],
+    [new DateTime(2018-01-01), new DateTime(2018-01-04), 0.3],
+    [new DateTime(2018-01-02), new DateTime(2018-01-05), 0.5],
+    [new DateTime(2018-01-03), new DateTime(2018-01-06), 0.2],
 ];
 
 $intervalGraph = new IntervalGraph($intervals);

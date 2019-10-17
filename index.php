@@ -76,9 +76,9 @@ $fractions = [
     D::intv(6, 9, [2, 10]),
 ];
 $fractim = (D::intvg($fractions))
-    ->setAggregate($agg)
     ->setValueToNumeric($toNumeric)
     ->setValueToString($toString);
+$fractim->getAggregator()->setAggregateFunction($agg);
 $fract = $fractim->draw();
 
 /* /CUSTOM VALUE TYPES */
@@ -213,8 +213,8 @@ $addInfo = D::intvg([
     D::intv(1, 3, [2, 5, true]),
 ])
     ->setValueToString($toString2)
-    ->setValueToNumeric($toNumeric)
-    ->setAggregate($agg2);
+    ->setValueToNumeric($toNumeric);
+$addInfo->getAggregator()->setAggregateFunction($agg2);
 ?>
 
 <h2>Passing additional information</h2>

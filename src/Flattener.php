@@ -46,14 +46,49 @@ class Flattener
     }
 
     /**
+     * Make an array of bounds from an array of intervals.
+     *
+     * Assign the value of the interval to each bound.
+     *
+     * Assign and a '+' sign if it is a low bound, and a '-' if it is an high bound.
+     * ```
+     * bound = [
+     *   bound value,
+     *   bound type,
+     *   TODO included,
+     *   interval key,
+     *   interval value
+     * ]
+     * ```
+     *
+     * @param array[] $intervals
+     * @return array[]
+     */
+    public static function intervalsToSignedBounds($intervals): array
+    {
+        $bounds = [];
+        foreach ($intervals as $key => $interval) {
+            // TODO Get included boolean from interval bound.
+            $bounds[] = [$interval[1], '-', true, $key, $interval[2] ?? null];
+            $bounds[] = [$interval[0], '+', true, $key, $interval[2] ?? null];
+        }
+        // Order the bounds.
+        usort($bounds, static function (array $d1, array $d2) {
+            return ($d1[0] < $d2[0]) ? -1 : 1;
+        });
+        return $bounds;
+    }
+
+    /**
      * Create each new interval and calculate its value based on the active intervals on each bound.
      *
-     * @param array $bounds
-     * @return array
+     * @param array[] $intervals
+     * @return array[]
      */
-    public function calcAdjacentIntervals(array $bounds): array
+    public function calcAdjacentIntervals(array $intervals): array
     {
 
+        $bounds = self::intervalsToSignedBounds($intervals);
         $newIntervals = [];
         $activeIntervals = [];
 

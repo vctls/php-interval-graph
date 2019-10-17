@@ -37,14 +37,14 @@ class IntervalGraph implements JsonSerializable
     /** @var Closure Return a string value from an initial interval value. */
     protected $valueToString;
 
-    /** @var Closure Aggregate interval values. */
-    protected $aggregateFunction;
-
     /** @var Palette */
     protected $palette;
 
     /** @var Flattener */
     private $flattener;
+
+    /** @var Aggregator */
+    private $aggregator;
 
     /**
      * Create an IntervalGraph from intervals carrying values.
@@ -74,13 +74,7 @@ class IntervalGraph implements JsonSerializable
             return $v === null ? null : ($v * 100 . '%');
         };
 
-        $this->aggregateFunction = static function ($a, $b) {
-            if ($a === null && $b === null) {
-                return null;
-            }
-            return round($a + $b, 2);
-        };
-
+        $this->aggregator = new Aggregator();
         $this->flattener = new Flattener();
         $this->palette = new Palette();
     }
@@ -101,14 +95,6 @@ class IntervalGraph implements JsonSerializable
     {
         $this->flattener = $flattener;
         return $this;
-    }
-
-    /**
-     * @return Closure
-     */
-    public function getAggregateFunction(): Closure
-    {
-        return $this->aggregateFunction;
     }
 
     /**
@@ -332,8 +318,7 @@ class IntervalGraph implements JsonSerializable
     public function getFlatIntervals(): array
     {
         $discreteValues = self::extractDiscreteValues($this->intervals);
-        $signedBounds = self::intervalsToSignedBounds($this->intervals);
-        $adjacentIntervals = $this->flattener->calcAdjacentIntervals($signedBounds);
+        $adjacentIntervals = $this->flattener->calcAdjacentIntervals($this->intervals);
 
         // Remove empty interval generated when two or more intervals share a common bound.
         $adjacentIntervals = array_values(array_filter($adjacentIntervals, static function ($i) {
@@ -342,7 +327,7 @@ class IntervalGraph implements JsonSerializable
         }));
 
         // Calculate aggregates after adjacent intervals.
-        $agregated = $this->aggregate($adjacentIntervals, $this->intervals);
+        $agregated = $this->aggregator->aggregate($adjacentIntervals, $this->intervals);
 
         // Push discrete values back into the array.
         if (!empty($discreteValues)) {
@@ -371,40 +356,6 @@ class IntervalGraph implements JsonSerializable
         $intervals = array_diff_key($intervals, $discreteValues);
 
         return $discreteValues;
-    }
-
-    /**
-     * Make an array of bounds from an array of intervals.
-     *
-     * Assign the value of the interval to each bound.
-     *
-     * Assign and a '+' sign if it is a low bound, and a '-' if it is an high bound.
-     * ```
-     * bound = [
-     *   bound value,
-     *   bound type,
-     *   TODO included,
-     *   interval key,
-     *   interval value
-     * ]
-     * ```
-     *
-     * @param $intervals
-     * @return array
-     */
-    public static function intervalsToSignedBounds($intervals): array
-    {
-        $bounds = [];
-        foreach ($intervals as $key => $interval) {
-            // TODO Get included boolean from interval bound.
-            $bounds[] = [$interval[1], '-', true, $key, $interval[2] ?? null];
-            $bounds[] = [$interval[0], '+', true, $key, $interval[2] ?? null];
-        }
-        // Order the bounds.
-        usort($bounds, static function (array $d1, array $d2) {
-            return ($d1[0] < $d2[0]) ? -1 : 1;
-        });
-        return $bounds;
     }
 
     /**
@@ -487,18 +438,6 @@ class IntervalGraph implements JsonSerializable
     public function setValueToString(Closure $valueToString): IntervalGraph
     {
         $this->valueToString = $valueToString;
-        return $this;
-    }
-
-    /**
-     * Define the function to aggregate interval values.
-     *
-     * @param Closure $aggregate
-     * @return IntervalGraph
-     */
-    public function setAggregate(Closure $aggregate): IntervalGraph
-    {
-        $this->aggregateFunction = $aggregate;
         return $this;
     }
 
@@ -610,35 +549,22 @@ class IntervalGraph implements JsonSerializable
     }
 
     /**
-     * Walk through an array of adjacent intervals, and compute the aggregated value
-     * from the values of the corresponding original intervals.
-     *
-     * @param array $adjacentIntervals
-     * @param array $origIntervals
-     * @return array
+     * @return Aggregator
      */
-    private function aggregate(array $adjacentIntervals, array $origIntervals): array
+    public function getAggregator(): Aggregator
     {
-        $origIntVals = [];
-
-        // Get the values of the original intervals, including nulls.
-        foreach ($origIntervals as $interval) {
-            $origIntVals[] = $interval[2] ?? null;
-        }
-
-        // If no intervals are active on this bound,
-        // the value of this interval is null.
-        // Else, aggregate the values of the corresponding intervals.
-        foreach ($adjacentIntervals as $key => $adjacentInterval) {
-            if (empty($adjacentInterval[2])) {
-                $adjacentIntervals[$key][2] = null;
-            } else {
-                $adjacentIntervals[$key][2] = array_reduce(
-                    array_intersect_key($origIntVals, $adjacentInterval[2]),
-                    $this->aggregateFunction
-                );
-            }
-        }
-        return $adjacentIntervals;
+        return $this->aggregator;
     }
+
+    /**
+     * @param Aggregator $aggregator
+     * @return IntervalGraph
+     */
+    public function setAggregator(Aggregator $aggregator): IntervalGraph
+    {
+        $this->aggregator = $aggregator;
+        return $this;
+    }
+
+
 }

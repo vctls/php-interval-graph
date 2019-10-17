@@ -63,7 +63,7 @@ class IntervalGraphTest extends TestCase
             [1, 3, 1]
         ];
 
-        return (new IntervalGraph($intervals))
+        $intvg = (new IntervalGraph($intervals))
             ->setBoundToNumeric(static function (int $bound) {
                 return $bound;
             })
@@ -75,11 +75,9 @@ class IntervalGraphTest extends TestCase
             })
             ->setValueToString(static function (int $value) {
                 return (string)$value;
-            })
-            ->setAggregate(static function ($a, $b) {
-                return $a + $b;
             });
-
+        $intvg->getAggregator()->setAggregateFunction(static function ($a, $b) {return $a + $b;});
+        return $intvg;
     }
 
     /**

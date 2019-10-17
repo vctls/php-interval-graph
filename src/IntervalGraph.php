@@ -217,7 +217,8 @@ class IntervalGraph implements JsonSerializable
      */
     public function createView(): IntervalGraph
     {
-        $flatIntervals = $this->getFlatIntervals();
+        $flatIntervals = $this->flattener->flatten($this->intervals);
+        $flatIntervals = $this->aggregator->aggregate($flatIntervals, $this->intervals);
 
         // Extract values.
         $originalValues = array_column($flatIntervals, 2);
@@ -310,62 +311,14 @@ class IntervalGraph implements JsonSerializable
     }
 
     /**
-     * Transform an array of intervals with possible overlapping
-     * into an array of adjacent intervals with no overlapping.
-     *
-     * @return array
-     */
-    public function getFlatIntervals(): array
-    {
-        $discreteValues = self::extractDiscreteValues($this->intervals);
-        $adjacentIntervals = $this->flattener->calcAdjacentIntervals($this->intervals);
-
-        // Remove empty interval generated when two or more intervals share a common bound.
-        $adjacentIntervals = array_values(array_filter($adjacentIntervals, static function ($i) {
-            // Use weak comparison in case of object typed bounds.
-            return $i[0] != $i[1];
-        }));
-
-        // Calculate aggregates after adjacent intervals.
-        $agregated = $this->aggregator->aggregate($adjacentIntervals, $this->intervals);
-
-        // Push discrete values back into the array.
-        if (!empty($discreteValues)) {
-            array_push($agregated, ...$discreteValues);
-        }
-
-        return $agregated;
-    }
-
-    /**
-     * Extract discrete values from an array of intervals.
-     *
-     * Intervals with the exact same lower and higher bound will be considered as discrete values.
-     *
-     * They will be removed from the initial array, and returned in a separate array.
-     *
-     * @param array $intervals The initial array.
-     * @return array An array containing only discrete values.
-     */
-    public static function extractDiscreteValues(array &$intervals): array
-    {
-        $discreteValues = array_filter($intervals, static function ($interval) {
-            return $interval[0] === $interval[1];
-        });
-
-        $intervals = array_diff_key($intervals, $discreteValues);
-
-        return $discreteValues;
-    }
-
-    /**
      * Compute the numeric values of interval bounds and values.
      *
      * @return array
      */
     public function computeNumericValues(): array
     {
-        $intervals = $this->getFlatIntervals();
+        $intervals = $this->flattener->flatten($this->intervals);
+        $intervals = $this->aggregator->aggregate($intervals, $this->intervals);
 
         // Extract interval values.
         $intervalValues = array_column($intervals, 2);
@@ -565,6 +518,5 @@ class IntervalGraph implements JsonSerializable
         $this->aggregator = $aggregator;
         return $this;
     }
-
 
 }

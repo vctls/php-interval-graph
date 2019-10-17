@@ -134,7 +134,8 @@ class IntervalGraphTest extends TestCase
         ];
 
         $intervalGraph = D::intvg($intervals);
-        $flat = $intervalGraph->getFlatIntervals();
+        $flat = $intervalGraph->getFlattener()->flatten($intervalGraph->getIntervals());
+        $flat = $intervalGraph->getAggregator()->aggregate($flat, $intervalGraph->getIntervals());
         /**
          * @var DateTime $lowBound
          * @var DateTime $highBound

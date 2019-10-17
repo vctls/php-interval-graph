@@ -80,13 +80,37 @@ class Flattener
     }
 
     /**
+     * Extract discrete values from an array of intervals.
+     *
+     * Intervals with the exact same lower and higher bound will be considered as discrete values.
+     *
+     * They will be removed from the initial array, and returned in a separate array.
+     *
+     * @param array $intervals The initial array.
+     * @return array An array containing only discrete values.
+     */
+    public static function extractDiscreteValues(array &$intervals): array
+    {
+        $discreteValues = array_filter($intervals, static function ($interval) {
+            return $interval[0] === $interval[1];
+        });
+
+        $intervals = array_diff_key($intervals, $discreteValues);
+
+        return $discreteValues;
+    }
+
+    /**
      * Create each new interval and calculate its value based on the active intervals on each bound.
      *
      * @param array[] $intervals
      * @return array[]
      */
-    public function calcAdjacentIntervals(array $intervals): array
+    public function flatten(array $intervals): array
     {
+
+        $discreteValues = self::extractDiscreteValues($intervals);
+
 
         $bounds = self::intervalsToSignedBounds($intervals);
         $newIntervals = [];
@@ -135,6 +159,18 @@ class Flattener
                 $newHighBound,
                 $activeIntervals
             ];
+        }
+
+        // Remove empty interval generated when two or more intervals share a common bound.
+        $newIntervals = array_values(array_filter($newIntervals, static function ($i) {
+            // Use weak comparison in case of object typed bounds.
+            return $i[0] != $i[1];
+        }));
+
+
+        // Push discrete values back into the array.
+        if (!empty($discreteValues)) {
+            array_push($newIntervals, ...$discreteValues);
         }
 
         return $newIntervals;

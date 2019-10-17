@@ -10,7 +10,7 @@ use Vctls\IntervalGraph\IntervalGraph;
 
 /**
  * Utility class for creating interval graphs.
- * 
+ *
  * @package Vctls\IntervalGraph
  */
 class Date
@@ -25,9 +25,11 @@ class Date
      */
     public static function intv(int $start, int $end, $value = null): array
     {
-        $start = DateTime::createFromFormat('Y-m-d', '2019-01-01')->add(new DateInterval('P' . $start . 'D'))->setTime(0,0);
-        $end = DateTime::createFromFormat('Y-m-d', '2019-01-01')->add(new DateInterval('P' . $end . 'D'))->setTime(23,59,59);
-        return [$start, $end, $value];
+        $startDate = DateTime::createFromFormat('Y-m-d', '2019-01-01')
+            ->add(new DateInterval("P{$start}D"))->setTime(0, 0);
+        $endDate = DateTime::createFromFormat('Y-m-d', '2019-01-01')
+            ->add(new DateInterval("P{$end}D"))->setTime(23, 59, 59);
+        return [$startDate, $endDate, $value];
     }
 
     /**
@@ -39,12 +41,13 @@ class Date
     public static function intvg($intervals = null): IntervalGraph
     {
         $intvg = new IntervalGraph();
-        $intvg->setSubstractStep(static function (DateTime $bound) {
-            return (clone $bound)->sub(new DateInterval('PT1S'));
-        })
+        $intvg->getFlattener()
+            ->setSubstractStep(static function (DateTime $bound) {
+                return (clone $bound)->sub(new DateInterval('PT1S'));
+            })
             ->setAddStep(static function (DateTime $bound) {
-            return (clone $bound)->add(new DateInterval('PT1S'));
-        });
+                return (clone $bound)->add(new DateInterval('PT1S'));
+            });
         if (isset($intervals)) {
             $intvg->setIntervals($intervals);
         }
@@ -53,7 +56,7 @@ class Date
 
     /**
      * Generate a random date.
-     * 
+     *
      * @param int $min
      * @param int $max
      * @return DateTime

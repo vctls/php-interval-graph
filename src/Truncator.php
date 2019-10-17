@@ -5,7 +5,12 @@ namespace Vctls\IntervalGraph;
 
 use InvalidArgumentException;
 
-trait TruncatableTrait
+/**
+ * Truncate an array of intervals according to a low and high bound.
+ *
+ * @package Vctls\IntervalGraph
+ */
+class Truncator
 {
     /**
      * Truncate all intervals to the given lower and upper limits.

@@ -4,7 +4,7 @@
 
 require_once 'vendor/autoload.php';
 
-use Vctls\IntervalGraph\IntervalGraph;
+use Vctls\IntervalGraph\Truncator;
 use Vctls\IntervalGraph\Util\Date as D;
 
 $today = new DateTime('today');
@@ -39,7 +39,7 @@ $longIntervals = [
     D::intv(6, 9, 2 / 10),
 ];
 
-$longDateFormat = function (DateTime $bound) {
+$longDateFormat = static function (DateTime $bound) {
     return $bound->format('Y-m-d H:i:s');
 };
 
@@ -50,18 +50,20 @@ $long = (D::intvg($longIntervals))->setBoundToString($longDateFormat);
  */
 
 // An aggregate function for arrays representing fractions with the same denominator.
-$agg = function ($a, $b) {
-    if ($a === null && $b === null) return null;
+$agg = static function ($a, $b) {
+    if ($a === null && $b === null) {
+        return null;
+    }
     return [$a[0] + $b[0], $b[1]];
 };
 
 // A toNumeric function…
-$toNumeric = function ($a) {
+$toNumeric = static function ($a) {
     return $a === null ? null : (int)($a[0] / $a[1] * 100);
 };
 
 // A toString function…
-$toString = function ($a) {
+$toString = static function ($a) {
     return $a === null ? null : ($a[0] . '/' . $a[1]);
 };
 
@@ -84,14 +86,11 @@ $fract = $fractim->draw();
 /*
  * TRUNCATED INTERVALS
  */
-try {
-    $intv1 = (clone $today)->add(new DateInterval('PT60H'));
-    $intv2 = (clone $today)->add(new DateInterval('PT108H'));
-    $intv3 = (clone $intv2)->add(new DateInterval('PT60H'));
-} catch (Exception $e) {
-}
+$intv1 = (DateTime::createFromFormat('Y-m-d', '2019-01-01'))->add(new DateInterval('PT60H'))->setTime(0,0);
+$intv2 = (DateTime::createFromFormat('Y-m-d', '2019-01-01'))->add(new DateInterval('PT108H'))->setTime(23,59,59);
+$intv3 = (clone $intv2)->add(new DateInterval('PT60H'));
 
-$truncated = ($fractim->setIntervals(IntervalGraph::truncate($fractions, $intv1, $intv2)))
+$truncated = ($fractim->setIntervals(Truncator::truncate($fractions, $intv1, $intv2)))
     ->setBoundToString($longDateFormat);
 /* /TRUNCATED INTERVALS */
 
@@ -103,7 +102,7 @@ $withDates = (D::intvg([
     D::intv(2, 3, 3 / 10),
     [$intv3, $intv3],
 ]))
-    ->setBoundToString($longDateFormat);;
+    ->setBoundToString($longDateFormat);
 
 $intvGraphs = [];
 foreach (range(0, 20) as $t) {
@@ -190,15 +189,17 @@ foreach (range(0, 20) as $t) {
 <?php
 
 /* ADDITIONAL INFORMATION */
-$toString2 = function ($a) {
+$toString2 = static function ($a) {
     if ($a === null) {
         return null;
     }
     return $a[0] . '/' . $a[1] . ($a[2] ? '*' : '');
 };
 
-$agg2 = function ($a, $b) {
-    if ($a === null && $b === null) return null;
+$agg2 = static function ($a, $b) {
+    if ($a === null && $b === null) {
+        return null;
+    }
     return [
         $a[0] + $b[0],
         $b[1],

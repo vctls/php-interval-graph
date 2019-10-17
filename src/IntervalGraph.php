@@ -10,11 +10,12 @@ use JsonSerializable;
 
 /**
  * A class to manipulate and display arrays of weighted intervals.
+ *
+ * @package Vctls\IntervalGraph
  */
 class IntervalGraph implements JsonSerializable
 {
-    use TruncatableTrait;
-    
+
     /** @var array Initial intervals */
     protected $intervals;
 
@@ -41,12 +42,9 @@ class IntervalGraph implements JsonSerializable
 
     /** @var Palette */
     protected $palette;
-    
-    /** @var Closure Substract one step from a bound value. */
-    protected $substractStep;
-    
-    /** @var Closure Add one step to the bound value. */
-    protected $addStep;
+
+    /** @var Flattener */
+    private $flattener;
 
     /**
      * Create an IntervalGraph from intervals carrying values.
@@ -83,35 +81,28 @@ class IntervalGraph implements JsonSerializable
             return round($a + $b, 2);
         };
 
+        $this->flattener = new Flattener();
         $this->palette = new Palette();
     }
 
     /**
-     * Set the Closure for decrementing bound values when dealing with
-     * discontinuous sets.
-     * 
-     * @param Closure $substractStep
-     * @return IntervalGraph
+     * @return Flattener
      */
-    public function setSubstractStep(Closure $substractStep): IntervalGraph
+    public function getFlattener(): Flattener
     {
-        $this->substractStep = $substractStep;
-        return $this;
+        return $this->flattener;
     }
 
     /**
-     * Set the Closure for incrementing bound values when dealing with
-     * discontinuous sets.
-     * 
-     * @param Closure $addStep
+     * @param Flattener $flattener
      * @return IntervalGraph
      */
-    public function setAddStep(Closure $addStep): IntervalGraph
+    public function setFlattener(Flattener $flattener): IntervalGraph
     {
-        $this->addStep = $addStep;
+        $this->flattener = $flattener;
         return $this;
     }
-    
+
     /**
      * @return Closure
      */
@@ -165,7 +156,7 @@ class IntervalGraph implements JsonSerializable
                         // FIXME Handle Type errors?
                         throw new PropertyConversionException(
                             "$property[0] of interval $intervalKey cannot be converted to a $expectedType value " .
-                            "with the given '$property[1]To$expectedTypeTitle' function. Error : " . 
+                            "with the given '$property[1]To$expectedTypeTitle' function. Error : " .
                             $exception->getMessage()
                         );
                     }
@@ -193,7 +184,7 @@ class IntervalGraph implements JsonSerializable
 
         return $this;
     }
-    
+
     /**
      * Render an HTML view of the intervalGraph.
      *
@@ -244,9 +235,9 @@ class IntervalGraph implements JsonSerializable
 
         // Extract values.
         $originalValues = array_column($flatIntervals, 2);
-        
+
         $numVals = [];
-        
+
         // Change bounds to numeric values.
         foreach ($flatIntervals as $interval) {
             $numVals[] = [
@@ -291,22 +282,22 @@ class IntervalGraph implements JsonSerializable
         // Since we're using associative sorting functions, we know the keys haven't changed.
         $numKeys = array_keys($numVals);
         foreach ($numKeys as $numKey) {
-            
+
             [$lowBound, $highBound] = $flatIntervals[$numKey];
             [$startPercent, $endPercent] = $numVals[$numKey];
-            
+
             if ($lowBound === $highBound) {
-                
+
                 $numVals[$numKey] = [
                     $startPercent, // Single value position percentage
                     ($this->boundToString)($lowBound), // Single value string
                 ];
-                
+
             } else {
-                
+
                 $colval = isset($originalValues[$numKey]) ? ($this->valueToNumeric)($originalValues[$numKey]) : null;
                 $strval = isset($originalValues[$numKey]) ? ($this->valueToString)($originalValues[$numKey]) : null;
-                
+
                 $numVals[$numKey] = [
                     $startPercent, // Interval start percentage
                     100 - $endPercent, // Interval end percentage from right
@@ -342,7 +333,7 @@ class IntervalGraph implements JsonSerializable
     {
         $discreteValues = self::extractDiscreteValues($this->intervals);
         $signedBounds = self::intervalsToSignedBounds($this->intervals);
-        $adjacentIntervals = $this->calcAdjacentIntervals($signedBounds);
+        $adjacentIntervals = $this->flattener->calcAdjacentIntervals($signedBounds);
 
         // Remove empty interval generated when two or more intervals share a common bound.
         $adjacentIntervals = array_values(array_filter($adjacentIntervals, static function ($i) {
@@ -350,12 +341,15 @@ class IntervalGraph implements JsonSerializable
             return $i[0] != $i[1];
         }));
 
+        // Calculate aggregates after adjacent intervals.
+        $agregated = $this->aggregate($adjacentIntervals, $this->intervals);
+
         // Push discrete values back into the array.
         if (!empty($discreteValues)) {
-            array_push($adjacentIntervals, ...$discreteValues);
+            array_push($agregated, ...$discreteValues);
         }
 
-        return $adjacentIntervals;
+        return $agregated;
     }
 
     /**
@@ -414,92 +408,14 @@ class IntervalGraph implements JsonSerializable
     }
 
     /**
-     * Create each new interval and calculate its value based on the active intervals on each bound.
-     *
-     * @param array $bounds
-     * @return array
-     */
-    public function calcAdjacentIntervals(array $bounds): array
-    {
-        $origIntVals = [];
-            
-        // Get the values of the original intervals, including nulls.
-        foreach ($this->intervals as $interval) {
-            $origIntVals[] = $interval[2] ?? null;
-        }
-
-        $newIntervals = [];
-        $activeIntervals = [];
-
-        $boundsCount = count($bounds);
-        
-        // Create new intervals for each set of two consecutive bounds,
-        // and calculate its total value.
-        for ($i = 1; $i < $boundsCount; $i++) {
-
-            // Set the current bound.
-            [$curBoundValue, $curBoundType, $curBoundIncluded, $curBoundIntervalKey] = $bounds[$i - 1];
-            [$nextBoundValue, $nextBoundType, $nextBoundIncluded] = $bounds[$i];
-
-            if ($curBoundType === '+') {
-                // If this is a low bound,
-                // add the key of the interval to the array of active intervals.
-                $activeIntervals[$curBoundIntervalKey] = true;
-            } else {
-                // If this is an high bound, remove the key.
-                unset($activeIntervals[$curBoundIntervalKey]);
-            }
-
-            if (empty($activeIntervals)) {
-                // If no intervals are active on this bound,
-                // the value of this interval is null.
-                $intervalValue = null;
-            } else {
-                // Else, aggregate the values of the corresponding intervals.
-                $intervalValue = array_reduce(
-                    array_intersect_key($origIntVals, $activeIntervals),
-                    $this->aggregateFunction
-                );
-            }
-            
-            if (
-                isset($this->addStep, $this->substractStep) && (
-                    ($nextBoundIncluded && $nextBoundType === '+')
-                    || (!$nextBoundIncluded && $nextBoundType === '+')
-                )
-            ) {
-                $newHighBound = ($this->substractStep)($nextBoundValue);
-            } else {
-                $newHighBound = $nextBoundValue;
-            }
-            
-            if (
-                isset($this->addStep, $this->substractStep) && $curBoundType === '-' && $curBoundIncluded
-            ) {
-                $newLowBound = ($this->addStep)($curBoundValue);
-            } else {
-                $newLowBound = $curBoundValue;
-            }
-
-            $newIntervals[] = [
-                $newLowBound,
-                $newHighBound,
-                $intervalValue
-            ];
-        }
-
-        return $newIntervals;
-    }
-
-    /**
      * Compute the numeric values of interval bounds and values.
-     * 
+     *
      * @return array
      */
     public function computeNumericValues(): array
     {
         $intervals = $this->getFlatIntervals();
-        
+
         // Extract interval values.
         $intervalValues = array_column($intervals, 2);
 
@@ -515,26 +431,26 @@ class IntervalGraph implements JsonSerializable
         uasort($numericIntervals, static function (array $i1, array $i2) {
             return ($i1[1] < $i2[1]) ? -1 : 1;
         });
-        
+
 
         // Put values back in, along with the formatted bound.
         // Since we're using associative sorting functions, we know the keys haven't changed.
         foreach (array_keys($numericIntervals) as $index => $numKey) {
-            
+
             [$lowNumericBound, $highNumericBound] = $numericIntervals[$index];
 
             if ($lowNumericBound === $highNumericBound) {
-                
+
                 $numericIntervals[$index] = $lowNumericBound;
-                
+
             } else {
-                
+
                 $numericIntervals[$index] = [
                     $lowNumericBound,
                     $highNumericBound,
                     $intervalValues[$index] ?: 0
                 ];
-                
+
             }
         }
 
@@ -660,7 +576,7 @@ class IntervalGraph implements JsonSerializable
 
     /**
      * Set the Palette object to be used to determine colors.
-     * 
+     *
      * @param Palette $palette
      * @return IntervalGraph
      */
@@ -691,5 +607,38 @@ class IntervalGraph implements JsonSerializable
             $this->createView();
         }
         return $this->values;
+    }
+
+    /**
+     * Walk through an array of adjacent intervals, and compute the aggregated value
+     * from the values of the corresponding original intervals.
+     *
+     * @param array $adjacentIntervals
+     * @param array $origIntervals
+     * @return array
+     */
+    private function aggregate(array $adjacentIntervals, array $origIntervals): array
+    {
+        $origIntVals = [];
+
+        // Get the values of the original intervals, including nulls.
+        foreach ($origIntervals as $interval) {
+            $origIntVals[] = $interval[2] ?? null;
+        }
+
+        // If no intervals are active on this bound,
+        // the value of this interval is null.
+        // Else, aggregate the values of the corresponding intervals.
+        foreach ($adjacentIntervals as $key => $adjacentInterval) {
+            if (empty($adjacentInterval[2])) {
+                $adjacentIntervals[$key][2] = null;
+            } else {
+                $adjacentIntervals[$key][2] = array_reduce(
+                    array_intersect_key($origIntVals, $adjacentInterval[2]),
+                    $this->aggregateFunction
+                );
+            }
+        }
+        return $adjacentIntervals;
     }
 }

@@ -7,6 +7,7 @@ use Exception;
 use InvalidArgumentException;
 use PHPUnit\Framework\TestCase;
 use Vctls\IntervalGraph\IntervalGraph;
+use Vctls\IntervalGraph\Truncator;
 use Vctls\IntervalGraph\Util\Date as D;
 
 /**
@@ -118,7 +119,7 @@ class IntervalGraphTest extends TestCase
      */
     public function testTruncate(array $intervals, array $limits, bool $padding, array $expected): void
     {
-        $truncated = IntervalGraph::truncate($intervals, $limits[0], $limits[1], $padding);
+        $truncated = Truncator::truncate($intervals, $limits[0], $limits[1], $padding);
         $this->assertEquals($expected, $truncated, "Generated values don't match the expected result.");
     }
 

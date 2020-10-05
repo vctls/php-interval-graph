@@ -7,11 +7,11 @@ namespace Vctls\IntervalGraph;
 use Closure;
 
 /**
- * Aggregate values passing them directly to the aggregate function.
+ * Aggregate values through `array_reduce`.
  *
  * @package Vctls\IntervalGraph
  */
-class Aggregator implements AggregatorInterface
+class ArrayReduceAggregator implements AggregatorInterface
 {
     /** @var Closure Aggregate interval values. */
     protected $aggregateFunction;
@@ -70,8 +70,10 @@ class Aggregator implements AggregatorInterface
             if (empty($adjacentInterval[2])) {
                 $adjacentIntervals[$key][2] = null;
             } else {
-                $adjacentIntervals[$key][2] =
-                    ($this->aggregateFunction)(array_intersect_key($origIntVals, $adjacentInterval[2]));
+                $adjacentIntervals[$key][2] = array_reduce(
+                    array_intersect_key($origIntVals, $adjacentInterval[2]),
+                    $this->aggregateFunction
+                );
             }
         }
         return $adjacentIntervals;

@@ -30,7 +30,7 @@ class IntervalGraphTest extends TestCase
         ];
 
         $intervalGraph = new IntervalGraph($longIntervals);
-        $this->assertInstanceOf(IntervalGraph::class, $intervalGraph, 'An IntervalGraph could not be created.');
+        self::assertInstanceOf(IntervalGraph::class, $intervalGraph, 'An IntervalGraph could not be created.');
     }
 
     /**
@@ -48,7 +48,7 @@ class IntervalGraphTest extends TestCase
             [66.67, 0, 'color_1', '2', '3', '1']
         ];
 
-        $this->assertEquals($expected, $values, "Generated values don't match the expected result.");
+        self::assertEquals($expected, $values, "Generated values don't match the expected result.");
     }
 
     /**
@@ -118,7 +118,7 @@ class IntervalGraphTest extends TestCase
     public function testTruncate(array $intervals, array $limits, bool $padding, array $expected): void
     {
         $truncated = Truncator::truncate($intervals, $limits[0], $limits[1], $padding);
-        $this->assertEquals($expected, $truncated, "Generated values don't match the expected result.");
+        self::assertEquals($expected, $truncated, "Generated values don't match the expected result.");
     }
 
     public function testFlatIntervals(): void
@@ -142,13 +142,13 @@ class IntervalGraphTest extends TestCase
          */
         [$lowBound, $highBound] = $flat[2];
 
-        $this->assertInstanceOf(DateTime::class, $flat[2][0]);
-        $this->assertEquals('1970-01-03', $lowBound->format('Y-m-d'));
+        self::assertInstanceOf(DateTime::class, $flat[2][0]);
+        self::assertEquals('1970-01-03', $lowBound->format('Y-m-d'));
 
-        $this->assertInstanceOf(DateTime::class, $flat[2][1]);
-        $this->assertEquals('1970-01-04', $highBound->format('Y-m-d'));
+        self::assertInstanceOf(DateTime::class, $flat[2][1]);
+        self::assertEquals('1970-01-04', $highBound->format('Y-m-d'));
 
-        $this->assertEquals(4, $flat[2][2]);
+        self::assertEquals(4, $flat[2][2]);
     }
 
     /**
@@ -167,7 +167,7 @@ class IntervalGraphTest extends TestCase
         } catch (Exception $exception) {
         }
 
-        $this->assertInstanceOf(InvalidArgumentException::class, $exception);
+        self::assertInstanceOf(InvalidArgumentException::class, $exception);
 
         // TODO Check that bounds and values are compatible with the given conversion closures.
     }
@@ -194,7 +194,7 @@ class IntervalGraphTest extends TestCase
             [345601, 432000, 0]
         ];
 
-        $this->assertEquals($expected, $values, "Generated values don't match the expected result.");
+        self::assertEquals($expected, $values, "Generated values don't match the expected result.");
     }
 
     /**
@@ -217,7 +217,7 @@ class IntervalGraphTest extends TestCase
             '</div>';
 
         $intervalGraph = new IntervalGraph($longIntervals);
-        $this->assertEquals($html, (string)$intervalGraph);
+        self::assertEquals($html, (string)$intervalGraph);
     }
 
 }

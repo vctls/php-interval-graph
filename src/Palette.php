@@ -40,7 +40,7 @@ class Palette
      *  [ 50, '#ff9431' ]
      *
      * For discrete values, simply insert the same value twice.
-     * 
+     *
      * Make sure values are in the correct order.
      *
      * @param array $palette
@@ -65,7 +65,7 @@ class Palette
     /**
      * Get the hexadecimal color code for the given percentage.
      *
-     * @param integer $percent
+     * @param int|null $percent
      * @return string
      */
     public function getColor(int $percent = null): string

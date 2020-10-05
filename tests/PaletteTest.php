@@ -23,17 +23,17 @@ class PaletteTest extends TestCase
             [100, 'col_3'],
             [100, 'col_4'],
         ]);
-        
-        $this->assertEquals($palette->getColor(30), 'col_1');
-        $this->assertEquals($palette->getColor(80), 'col_2');
+
+        self::assertEquals('col_1', $palette->getColor(30));
+        self::assertEquals('col_2', $palette->getColor(80));
     }
-    
+
     public function testSetBGColor(): void
     {
         $palette = new Palette();
         // Try setting unordered color references.
         $palette->setBGColor('background_color_ref');
-        
-        $this->assertEquals($palette->getColor(), 'background_color_ref');
+
+        self::assertEquals('background_color_ref', $palette->getColor());
     }
 }

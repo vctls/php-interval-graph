@@ -10,7 +10,7 @@ use InvalidArgumentException;
  *
  * @package Vctls\IntervalGraph
  */
-class Truncator
+class Truncator implements TruncatorInterface
 {
     /**
      * Truncate all intervals to the given lower and upper limits.
@@ -94,10 +94,8 @@ class Truncator
         switch ($type) {
             case 0:
                 return self::minBound($intervals);
-                break;
             case 1:
                 return self::maxBound($intervals);
-                break;
             default:
                 throw new InvalidArgumentException('Type must be 0 (min) or 1 (max)');
         }
@@ -138,15 +136,13 @@ class Truncator
      * @param int $type 0 (lower limit) or 1 (upper limit)
      * @return bool
      */
-    private static function compareToLimit($value, $limit, int $type): bool
+    public static function compareToLimit($value, $limit, int $type): bool
     {
         switch ($type) {
             case 0 :
                 return $value < $limit;
-                break;
             case 1 :
                 return $value > $limit;
-                break;
             default :
                 throw new InvalidArgumentException('Limit type must be 0 (lower) or 1 (upper)');
         }

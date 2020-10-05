@@ -40,10 +40,10 @@ class IntervalGraph implements JsonSerializable
     /** @var Palette */
     protected $palette;
 
-    /** @var Flattener */
+    /** @var FlattenerInterface */
     private $flattener;
 
-    /** @var Aggregator */
+    /** @var AggregatorInterface */
     private $aggregator;
 
     /**
@@ -52,9 +52,9 @@ class IntervalGraph implements JsonSerializable
      * @param array[] $intervals An array of intervals,
      * with a low bound, high bound and a value.
      */
-    public function __construct($intervals = null)
+    public function __construct($intervals = [])
     {
-        if (isset($intervals)) {
+        if (!empty($intervals)) {
             $this->setIntervals($intervals);
         }
 
@@ -74,24 +74,24 @@ class IntervalGraph implements JsonSerializable
             return $v === null ? null : ($v * 100 . '%');
         };
 
-        $this->aggregator = new Aggregator();
+        $this->aggregator = new ArrayReduceAggregator();
         $this->flattener = new Flattener();
         $this->palette = new Palette();
     }
 
     /**
-     * @return Flattener
+     * @return FlattenerInterface
      */
-    public function getFlattener(): Flattener
+    public function getFlattener(): FlattenerInterface
     {
         return $this->flattener;
     }
 
     /**
-     * @param Flattener $flattener
+     * @param FlattenerInterface $flattener
      * @return IntervalGraph
      */
-    public function setFlattener(Flattener $flattener): IntervalGraph
+    public function setFlattener(FlattenerInterface $flattener): IntervalGraph
     {
         $this->flattener = $flattener;
         return $this;
@@ -400,7 +400,7 @@ class IntervalGraph implements JsonSerializable
      * @param Closure $boundToString
      * @return IntervalGraph
      */
-    public function setBoundToString($boundToString): IntervalGraph
+    public function setBoundToString(Closure $boundToString): IntervalGraph
     {
         $this->boundToString = $boundToString;
         return $this;
@@ -447,12 +447,12 @@ class IntervalGraph implements JsonSerializable
     }
 
     /**
-     * Set the PHP template to use for rendering.
+     * Set the PHP template to use for rendering.
      *
      * @param string $template
      * @return IntervalGraph
      */
-    public function setTemplate($template): IntervalGraph
+    public function setTemplate(string $template): IntervalGraph
     {
         $this->template = $template;
         return $this;
@@ -472,7 +472,7 @@ class IntervalGraph implements JsonSerializable
      * @param Palette $palette
      * @return IntervalGraph
      */
-    public function setPalette($palette): IntervalGraph
+    public function setPalette(Palette $palette): IntervalGraph
     {
         $this->palette = $palette;
         return $this;
@@ -482,7 +482,7 @@ class IntervalGraph implements JsonSerializable
      * @param Closure $boundToNumeric
      * @return IntervalGraph
      */
-    public function setBoundToNumeric($boundToNumeric): IntervalGraph
+    public function setBoundToNumeric(Closure $boundToNumeric): IntervalGraph
     {
         $this->boundToNumeric = $boundToNumeric;
         return $this;
@@ -502,18 +502,18 @@ class IntervalGraph implements JsonSerializable
     }
 
     /**
-     * @return Aggregator
+     * @return AggregatorInterface
      */
-    public function getAggregator(): Aggregator
+    public function getAggregator(): AggregatorInterface
     {
         return $this->aggregator;
     }
 
     /**
-     * @param Aggregator $aggregator
+     * @param AggregatorInterface $aggregator
      * @return IntervalGraph
      */
-    public function setAggregator(Aggregator $aggregator): IntervalGraph
+    public function setAggregator(AggregatorInterface $aggregator): IntervalGraph
     {
         $this->aggregator = $aggregator;
         return $this;

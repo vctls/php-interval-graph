@@ -11,7 +11,7 @@ use Closure;
  *
  * @package Vctls\IntervalGraph
  */
-class Flattener
+class Flattener implements FlattenerInterface
 {
     /** @var Closure Substract one step from a bound value. */
     protected $substractStep;
@@ -26,7 +26,7 @@ class Flattener
      * @param Closure $substractStep
      * @return Flattener
      */
-    public function setSubstractStep(Closure $substractStep): Flattener
+    public function setSubstractStep(Closure $substractStep): FlattenerInterface
     {
         $this->substractStep = $substractStep;
         return $this;
@@ -39,7 +39,7 @@ class Flattener
      * @param Closure $addStep
      * @return Flattener
      */
-    public function setAddStep(Closure $addStep): Flattener
+    public function setAddStep(Closure $addStep): FlattenerInterface
     {
         $this->addStep = $addStep;
         return $this;
@@ -64,7 +64,7 @@ class Flattener
      * @param array[] $intervals
      * @return array[]
      */
-    public static function intervalsToSignedBounds($intervals): array
+    public static function intervalsToSignedBounds(array $intervals): array
     {
         $bounds = [];
         foreach ($intervals as $key => $interval) {

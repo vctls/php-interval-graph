@@ -73,9 +73,12 @@ class Flattener implements FlattenerInterface
             $bounds[] = [$interval[0], '+', true, $key, $interval[2] ?? null];
         }
         // Order the bounds.
-        usort($bounds, static function (array $d1, array $d2) {
-            return ($d1[0] < $d2[0]) ? -1 : 1;
-        });
+        usort(
+            $bounds,
+            static function (array $d1, array $d2) {
+                return ($d1[0] < $d2[0]) ? -1 : 1;
+            }
+        );
         return $bounds;
     }
 
@@ -91,9 +94,12 @@ class Flattener implements FlattenerInterface
      */
     public static function extractDiscreteValues(array &$intervals): array
     {
-        $discreteValues = array_filter($intervals, static function ($interval) {
-            return $interval[0] === $interval[1];
-        });
+        $discreteValues = array_filter(
+            $intervals,
+            static function ($interval) {
+                return $interval[0] === $interval[1];
+            }
+        );
 
         $intervals = array_diff_key($intervals, $discreteValues);
 
@@ -108,7 +114,6 @@ class Flattener implements FlattenerInterface
      */
     public function flatten(array $intervals): array
     {
-
         $discreteValues = self::extractDiscreteValues($intervals);
 
 
@@ -121,7 +126,6 @@ class Flattener implements FlattenerInterface
         // Create new intervals for each set of two consecutive bounds,
         // and calculate its total value.
         for ($i = 1; $i < $boundsCount; $i++) {
-
             // Set the current bound.
             [$curBoundValue, $curBoundType, $curBoundIncluded, $curBoundIntervalKey] = $bounds[$i - 1];
             [$nextBoundValue, $nextBoundType, $nextBoundIncluded] = $bounds[$i];
@@ -162,10 +166,15 @@ class Flattener implements FlattenerInterface
         }
 
         // Remove empty interval generated when two or more intervals share a common bound.
-        $newIntervals = array_values(array_filter($newIntervals, static function ($i) {
-            // Use weak comparison in case of object typed bounds.
-            return $i[0] != $i[1];
-        }));
+        $newIntervals = array_values(
+            array_filter(
+                $newIntervals,
+                static function ($i) {
+                    // Use weak comparison in case of object typed bounds.
+                    return $i[0] != $i[1];
+                }
+            )
+        );
 
 
         // Push discrete values back into the array.

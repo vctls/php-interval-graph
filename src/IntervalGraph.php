@@ -17,10 +17,16 @@ class IntervalGraph implements JsonSerializable
 {
 
     /** @var array Initial intervals */
-    protected $intervals;
+    protected $intervals = [];
+
+    /** @var array Flattened intervals */
+    protected $flattened = [];
+
+    /** @var array Aggregated flat intervals */
+    protected $aggregated = [];
 
     /** @var array Processed values */
-    protected $values;
+    protected $values = [];
 
     /** @var string Path to the template used for rendering. */
     protected $template = 'template.php';
@@ -112,9 +118,7 @@ class IntervalGraph implements JsonSerializable
      */
     public function checkIntervals(): self
     {
-
         foreach ($this->intervals as $intervalKey => $interval) {
-
             // Check that the interval is an array.
             if (!is_array($interval)) {
                 $t = gettype($interval);
@@ -126,14 +130,12 @@ class IntervalGraph implements JsonSerializable
             // Check that the bounds and value of the interval can be converted to both a numeric
             // and string value with the given closures.
             foreach ([['Lower bound', 'bound'], ['Higher bound', 'bound'], ['Value', 'value']] as $index => $property) {
-
                 // Skip value property of valueless intervals.
                 if ($property[1] === 'value' && !isset($interval[$index])) {
                     continue;
                 }
 
                 foreach (['numeric', 'string'] as $expectedType) {
-
                     $expectedTypeTitle = ucfirst($expectedType);
 
                     try {
@@ -193,7 +195,7 @@ class IntervalGraph implements JsonSerializable
      */
     public function draw(): string
     {
-        if (!isset($this->values)) {
+        if (empty($this->values)) {
             $this->createView();
         }
 
@@ -205,9 +207,40 @@ class IntervalGraph implements JsonSerializable
 
         // Remove all surplus whitespace.
         return preg_replace(
-            ['/(?<=>)\s+/', '/\s+(?=<)/', '/\s+/'], ['', '', ' '],
+            ['/(?<=>)\s+/', '/\s+(?=<)/', '/\s+/'],
+            ['', '', ' '],
             ob_get_clean()
         );
+    }
+
+    /**
+     * @return array[] An array of adjacent, non-overlapping intervals.
+     * The value of each interval is an array of all the values of the correspondig original intervals.
+     *
+     * ⚠ Flat intervals will be purged when setting new original intervals.
+     */
+    public function getFlatIntervals(): array
+    {
+        if (empty($this->flattened)){
+            $this->flattened = $this->flattener->flatten($this->intervals);
+        }
+        return $this->flattened;
+    }
+
+    /**
+     * @return array[] An array of adjacent, non-overlapping intervals with aggregated values.
+     *
+     * ⚠ Aggregated intervals will be purged when setting new original intervals.
+     */
+    public function getAggregatedIntervals(): array
+    {
+        if (empty($this->aggregated)){
+            $this->aggregated = $this->aggregator->aggregate(
+                $this->getFlatIntervals(),
+                $this->intervals
+            );
+        }
+        return $this->aggregated;
     }
 
     /**
@@ -217,8 +250,7 @@ class IntervalGraph implements JsonSerializable
      */
     public function createView(): IntervalGraph
     {
-        $flatIntervals = $this->flattener->flatten($this->intervals);
-        $flatIntervals = $this->aggregator->aggregate($flatIntervals, $this->intervals);
+        $flatIntervals = $this->getAggregatedIntervals();
 
         // Extract values.
         $originalValues = array_column($flatIntervals, 2);
@@ -234,9 +266,12 @@ class IntervalGraph implements JsonSerializable
         }
 
         // Order by low bound.
-        uasort($numVals, static function (array $i1, array $i2) {
-            return ($i1[0] < $i2[0]) ? -1 : 1;
-        });
+        uasort(
+            $numVals,
+            static function (array $i1, array $i2) {
+                return ($i1[0] < $i2[0]) ? -1 : 1;
+            }
+        );
 
         // Get the min bound value.
         $min = reset($numVals)[0];
@@ -250,9 +285,12 @@ class IntervalGraph implements JsonSerializable
         }
 
         // Order by high bound.
-        uasort($numVals, static function (array $i1, array $i2) {
-            return ($i1[1] < $i2[1]) ? -1 : 1;
-        });
+        uasort(
+            $numVals,
+            static function (array $i1, array $i2) {
+                return ($i1[1] < $i2[1]) ? -1 : 1;
+            }
+        );
 
         // Get max timestamp.
         $max = end($numVals)[1];
@@ -269,19 +307,15 @@ class IntervalGraph implements JsonSerializable
         // Since we're using associative sorting functions, we know the keys haven't changed.
         $numKeys = array_keys($numVals);
         foreach ($numKeys as $numKey) {
-
             [$lowBound, $highBound] = $flatIntervals[$numKey];
             [$startPercent, $endPercent] = $numVals[$numKey];
 
             if ($lowBound === $highBound) {
-
                 $numVals[$numKey] = [
                     $startPercent, // Single value position percentage
                     ($this->boundToString)($lowBound), // Single value string
                 ];
-
             } else {
-
                 $colval = isset($originalValues[$numKey]) ? ($this->valueToNumeric)($originalValues[$numKey]) : null;
                 $strval = isset($originalValues[$numKey]) ? ($this->valueToString)($originalValues[$numKey]) : null;
 
@@ -301,9 +335,12 @@ class IntervalGraph implements JsonSerializable
         // Put discrete values at the end and reset indices.
         // Reseting indices ensures the processed values are
         // serialized as correctly ordered JSON arrays.
-        usort($numVals, static function ($i) {
-            return count($i) === 2 ? 1 : -1;
-        });
+        usort(
+            $numVals,
+            static function ($i) {
+                return count($i) === 2 ? 1 : -1;
+            }
+        );
 
         $this->values = $numVals;
 
@@ -317,8 +354,7 @@ class IntervalGraph implements JsonSerializable
      */
     public function computeNumericValues(): array
     {
-        $intervals = $this->flattener->flatten($this->intervals);
-        $intervals = $this->aggregator->aggregate($intervals, $this->intervals);
+        $intervals = $this->getAggregatedIntervals();
 
         // Extract interval values.
         $intervalValues = array_column($intervals, 2);
@@ -332,38 +368,39 @@ class IntervalGraph implements JsonSerializable
         }
 
         // Order by high bound.
-        uasort($numericIntervals, static function (array $i1, array $i2) {
-            return ($i1[1] < $i2[1]) ? -1 : 1;
-        });
+        uasort(
+            $numericIntervals,
+            static function (array $i1, array $i2) {
+                return ($i1[1] < $i2[1]) ? -1 : 1;
+            }
+        );
 
 
         // Put values back in, along with the formatted bound.
         // Since we're using associative sorting functions, we know the keys haven't changed.
         foreach (array_keys($numericIntervals) as $index => $numKey) {
-
             [$lowNumericBound, $highNumericBound] = $numericIntervals[$index];
 
             if ($lowNumericBound === $highNumericBound) {
-
                 $numericIntervals[$index] = $lowNumericBound;
-
             } else {
-
                 $numericIntervals[$index] = [
                     $lowNumericBound,
                     $highNumericBound,
                     $intervalValues[$index] ?: 0
                 ];
-
             }
         }
 
         // Put discrete values at the end and reset indices.
         // Reseting indices ensures the processed values are
         // serialized as correctly ordered JSON arrays.
-        usort($numericIntervals, static function ($i) {
-            return !is_array($i) ? 1 : -1;
-        });
+        usort(
+            $numericIntervals,
+            static function ($i) {
+                return !is_array($i) ? 1 : -1;
+            }
+        );
 
         return $numericIntervals;
     }
@@ -417,8 +454,8 @@ class IntervalGraph implements JsonSerializable
     /**
      * Set the intervals to be processed.
      *
-     * If another set of intervals was previously processed,
-     * the processed values will be deleted.
+     * ⚠ If another set of intervals was previously processed,
+     * stored flat and aggregated intervals and processed values will be deleted.
      *
      * @param array $intervals
      * @return IntervalGraph
@@ -426,7 +463,9 @@ class IntervalGraph implements JsonSerializable
     public function setIntervals(array $intervals): IntervalGraph
     {
         $this->intervals = $intervals;
-        $this->values = null;
+        $this->flattened = [];
+        $this->aggregated = [];
+        $this->values = [];
         return $this;
     }
 

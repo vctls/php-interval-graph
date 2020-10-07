@@ -214,12 +214,16 @@ class IntervalGraph implements JsonSerializable
     }
 
     /**
-     * @return array[] An array of adjacent, non-overlapping intervals.
+     * Returns an array of adjacent, non-overlapping intervals.
      * The value of each interval is an array of all the values of the correspondig original intervals.
      *
+     * The array can be returned by reference to be modified if needed.
+     *
      * ⚠ Flat intervals will be purged when setting new original intervals.
+     *
+     * @return array[] Array of adjacent, non-overlapping intervals.
      */
-    public function getFlatIntervals(): array
+    public function &getFlatIntervals(): array
     {
         if (empty($this->flattened)){
             $this->flattened = $this->flattener->flatten($this->intervals);
@@ -228,11 +232,15 @@ class IntervalGraph implements JsonSerializable
     }
 
     /**
-     * @return array[] An array of adjacent, non-overlapping intervals with aggregated values.
+     * Return an array of adjacent, non-overlapping intervals with aggregated values.
+     *
+     * The array can be returned by reference to be modified if needed.
      *
      * ⚠ Aggregated intervals will be purged when setting new original intervals.
+     *
+     * @return array[] Array of adjacent, non-overlapping intervals with aggregated values.
      */
-    public function getAggregatedIntervals(): array
+    public function &getAggregatedIntervals(): array
     {
         if (empty($this->aggregated)){
             $this->aggregated = $this->aggregator->aggregate(

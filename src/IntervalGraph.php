@@ -43,7 +43,7 @@ class IntervalGraph implements JsonSerializable
     /** @var Closure Return a string value from an initial interval value. */
     protected $valueToString;
 
-    /** @var Palette */
+    /** @var PaletteInterface */
     protected $palette;
 
     /** @var FlattenerInterface */
@@ -82,7 +82,7 @@ class IntervalGraph implements JsonSerializable
 
         $this->aggregator = new ArrayReduceAggregator();
         $this->flattener = new Flattener();
-        $this->palette = new Palette();
+        $this->palette = new ClassPalette();
     }
 
     /**
@@ -506,9 +506,9 @@ class IntervalGraph implements JsonSerializable
     }
 
     /**
-     * @return Palette
+     * @return PaletteInterface
      */
-    public function getPalette(): Palette
+    public function getPalette(): PaletteInterface
     {
         return $this->palette;
     }
@@ -516,10 +516,10 @@ class IntervalGraph implements JsonSerializable
     /**
      * Set the Palette object to be used to determine colors.
      *
-     * @param Palette $palette
+     * @param PaletteInterface $palette
      * @return IntervalGraph
      */
-    public function setPalette(Palette $palette): IntervalGraph
+    public function setPalette(PaletteInterface $palette): IntervalGraph
     {
         $this->palette = $palette;
         return $this;

@@ -5,11 +5,11 @@ namespace Vctls\IntervalGraph;
 use LogicException;
 
 /**
- * Holds color information for the graph.
+ * Holds color information for the graph as an array of CSS classes.
  *
  * @package Vctls\IntervalGraph
  */
-class Palette
+class ClassPalette implements PaletteInterface
 {
     /**
      * @var array $palette An array of percentages with corresponding color codes.
@@ -37,16 +37,16 @@ class Palette
      *
      * Ranges should be simple arrays, containing only the
      * upper bound and the corresponding color value, like this:
-     *  [ 50, '#ff9431' ]
+     *  [ 50, '.color_3' ]
      *
      * For discrete values, simply insert the same value twice.
      *
      * Make sure values are in the correct order.
      *
      * @param array $palette
-     * @return Palette
+     * @return ClassPalette
      */
-    public function setColors(array $palette): Palette
+    public function setColors(array $palette): ClassPalette
     {
         $this->palette = $palette;
         return $this;

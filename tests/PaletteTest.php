@@ -1,7 +1,7 @@
 <?php
 
 use PHPUnit\Framework\TestCase;
-use Vctls\IntervalGraph\Palette;
+use Vctls\IntervalGraph\ClassPalette;
 
 
 /**
@@ -13,7 +13,7 @@ class PaletteTest extends TestCase
 
     public function testSetColors(): void
     {
-        $palette = new Palette();
+        $palette = new ClassPalette();
         // Try setting unordered color references.
         $palette->setColors([
             [0, 'col_0'],
@@ -30,7 +30,7 @@ class PaletteTest extends TestCase
 
     public function testSetBGColor(): void
     {
-        $palette = new Palette();
+        $palette = new ClassPalette();
         // Try setting unordered color references.
         $palette->setBGColor('background_color_ref');
 

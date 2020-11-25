@@ -51,16 +51,16 @@ class ArrayReduceAggregator implements AggregatorInterface
      * from the values of the corresponding original intervals.
      *
      * @param array $adjacentIntervals
-     * @param array $origIntervals
+     * @param array $originalIntervals
      * @return array
      */
-    public function aggregate(array $adjacentIntervals, array $origIntervals): array
+    public function aggregate(array $adjacentIntervals, array $originalIntervals): array
     {
-        $origIntVals = [];
+        $originalValues = [];
 
         // Get the values of the original intervals, including nulls.
-        foreach ($origIntervals as $interval) {
-            $origIntVals[] = $interval[2] ?? null;
+        foreach ($originalIntervals as $i => $interval) {
+            $originalValues[$i] = $interval[2] ?? null;
         }
 
         // If no intervals are active on this bound,
@@ -71,7 +71,7 @@ class ArrayReduceAggregator implements AggregatorInterface
                 $adjacentIntervals[$key][2] = null;
             } else {
                 $adjacentIntervals[$key][2] = array_reduce(
-                    array_intersect_key($origIntVals, $adjacentInterval[2]),
+                    array_intersect_key($originalValues, $adjacentInterval[2]),
                     $this->aggregateFunction
                 );
             }

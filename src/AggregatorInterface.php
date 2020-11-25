@@ -25,8 +25,8 @@ interface AggregatorInterface
      * from the values of the corresponding original intervals.
      *
      * @param array $adjacentIntervals
-     * @param array $origIntervals
+     * @param array $originalIntervals
      * @return array
      */
-    public function aggregate(array $adjacentIntervals, array $origIntervals): array;
+    public function aggregate(array $adjacentIntervals, array $originalIntervals): array;
 }

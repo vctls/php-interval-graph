@@ -1,3 +1,5 @@
 /vendor/
+# PHPUnit generated files
 /.phpunit.result.cache
 /logfile.xml
+/coverage.xml

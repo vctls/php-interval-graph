@@ -39,8 +39,13 @@ class IntervalGraphTest extends TestCase
      */
     public function testSimpleIntegerSumIntervals(): void
     {
-        $intervalGraph = $this->getSimpleIntegerSumIntervalGraph();
-        $values = $intervalGraph->createView()->checkIntervals()->getValues();
+        $intervals = [
+            [0, 2, 1],
+            [1, 3, 1]
+        ];
+        $intvg = $this->getSimpleIntegerSumIntervalGraph();
+        $intvg->setIntervals($intervals);
+        $values = $intvg->createView()->checkIntervals()->getValues();
 
         $expected = [
             [0, 66.67, 'color_1', '0', '1', '1'],
@@ -58,12 +63,7 @@ class IntervalGraphTest extends TestCase
      */
     public function getSimpleIntegerSumIntervalGraph(): IntervalGraph
     {
-        $intervals = [
-            [0, 2, 1],
-            [1, 3, 1]
-        ];
-
-        $intvg = (new IntervalGraph($intervals))
+        $intvg = (new IntervalGraph())
             ->setBoundToNumeric(static function (int $bound) {
                 return $bound;
             })
@@ -149,6 +149,30 @@ class IntervalGraphTest extends TestCase
         self::assertEquals('1970-01-04', $highBound->format('Y-m-d'));
 
         self::assertEquals(4, $flat[2][2]);
+    }
+
+    /**
+     * Check that identical bounds do not result in new intervals.
+     */
+    public function testIdenticalBounds(): void
+    {
+        $intvg = $this->getSimpleIntegerSumIntervalGraph();
+
+        $intervals = [
+            [1, 3, 1],
+            [1, 3, 2],
+            [2, 5, 2],
+            [2, 5, 3],
+        ];
+
+        $intvg->setIntervals($intervals);
+
+        $flat = $intvg->getFlattener()->flatten($intvg->getIntervals());
+        $flat = $intvg->getAggregator()->aggregate($flat, $intvg->getIntervals());
+
+        self::assertCount(3, $flat);
+        self::assertEquals(3, $flat[0][2]);
+        self::assertEquals(5, $flat[2][2]);
     }
 
     /**

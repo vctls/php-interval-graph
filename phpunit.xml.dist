@@ -1,22 +1,25 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<phpunit xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" bootstrap="./tests/bootstrap.php" colors="true" xsi:noNamespaceSchemaLocation="https://schema.phpunit.de/9.3/phpunit.xsd">
-  <coverage processUncoveredFiles="true">
-    <include>
-      <directory suffix=".php">./src</directory>
-    </include>
-    <exclude>
-      <file>./src/template.php</file>
-    </exclude>
-    <report>
-      <clover outputFile="/tmp/coverage.xml"/>
-    </report>
-  </coverage>
-  <testsuites>
-    <testsuite name="php-intervalGraph test suite">
-      <directory suffix="Test.php">./tests</directory>
-    </testsuite>
-  </testsuites>
-  <logging>
-    <junit outputFile="/tmp/logfile.xml"/>
-  </logging>
+<phpunit xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         bootstrap="./tests/bootstrap.php"
+         colors="true"
+         xsi:noNamespaceSchemaLocation="https://schema.phpunit.de/9.3/phpunit.xsd">
+    <coverage processUncoveredFiles="true">
+        <include>
+            <directory suffix=".php">./src</directory>
+        </include>
+        <exclude>
+            <file>./src/template.php</file>
+        </exclude>
+        <report>
+            <clover outputFile="./coverage.xml"/>
+        </report>
+    </coverage>
+    <testsuites>
+        <testsuite name="php-intervalGraph test suite">
+            <directory>./tests</directory>
+        </testsuite>
+    </testsuites>
+    <logging>
+        <junit outputFile="./logfile.xml"/>
+    </logging>
 </phpunit>

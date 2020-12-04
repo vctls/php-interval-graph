@@ -130,6 +130,13 @@ class Flattener implements FlattenerInterface
             [$curBoundValue, $curBoundType, $curBoundIncluded, $curBoundIntervalKey] = $bounds[$i - 1];
             [$nextBoundValue, $nextBoundType, $nextBoundIncluded] = $bounds[$i];
 
+            // If the current bound is the same as the next, which happens when multiple intervals
+            // begin or end at the same time, skip it.
+            // Use weak comparison since the type could be an object like DateTime.
+            if ($curBoundValue == $nextBoundValue){
+                continue;
+            }
+
             if ($curBoundType === '+') {
                 // If this is a low bound,
                 // add the key of the interval to the array of active intervals.
@@ -164,18 +171,6 @@ class Flattener implements FlattenerInterface
                 $activeIntervals
             ];
         }
-
-        // Remove empty interval generated when two or more intervals share a common bound.
-        $newIntervals = array_values(
-            array_filter(
-                $newIntervals,
-                static function ($i) {
-                    // Use weak comparison in case of object typed bounds.
-                    return $i[0] != $i[1];
-                }
-            )
-        );
-
 
         // Push discrete values back into the array.
         if (!empty($discreteValues)) {

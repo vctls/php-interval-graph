@@ -4,6 +4,8 @@ namespace Vctls\IntervalGraph;
 
 use Closure;
 
+use function count;
+
 /**
  * Transforms an array of overlapping intervals into another array of adjacent intervals.
  *
@@ -141,28 +143,12 @@ class Flattener implements FlattenerInterface
 
             // If the current bound is the same as the next, which happens when multiple intervals
             // begin or end at the same time, skip interval creation.
-            if ($curBoundValue === $nextBoundValue){
+            if ($curBoundValue === $nextBoundValue) {
                 continue;
             }
 
-            if (
-                isset($this->addStep, $this->substractStep) && (
-                    ($nextBoundIncluded && $nextBoundType === '+')
-                    || (!$nextBoundIncluded && $nextBoundType === '+')
-                )
-            ) {
-                $newHighBound = ($this->substractStep)($nextBoundValue);
-            } else {
-                $newHighBound = $nextBoundValue;
-            }
-
-            if (
-                isset($this->addStep, $this->substractStep) && $curBoundType === '-' && $curBoundIncluded
-            ) {
-                $newLowBound = ($this->addStep)($curBoundValue);
-            } else {
-                $newLowBound = $curBoundValue;
-            }
+            $newHighBound = $this->makeHighBound($nextBoundType, $nextBoundIncluded, $nextBoundValue);
+            $newLowBound = $this->makeLowBound($curBoundType, $curBoundIncluded, $curBoundValue);
 
             $newIntervals[] = [
                 $newLowBound,
@@ -177,5 +163,45 @@ class Flattener implements FlattenerInterface
         }
 
         return $newIntervals;
+    }
+
+    /**
+     * Define the high bound of the new interval.
+     *
+     * @param string $nextBoundType Type of the next bound: low (-) or high (+)
+     * @param bool $nextBoundIncluded Is the next bound included?
+     * @param mixed $nextBoundValue
+     * @return mixed
+     */
+    private function makeHighBound(string $nextBoundType, bool $nextBoundIncluded, $nextBoundValue)
+    {
+        if (
+            isset($this->addStep, $this->substractStep) && (
+                ($nextBoundIncluded && $nextBoundType === '+')
+                || (!$nextBoundIncluded && $nextBoundType === '+')
+            )
+        ) {
+            return ($this->substractStep)($nextBoundValue);
+        }
+        return $nextBoundValue;
+    }
+
+    /**
+     * Define the low bound of the new interval.
+     *
+     * @param string $curBoundType Type of the current bound: low (-) or high (+)
+     * @param bool $curBoundIncluded Is the current bound included?
+     * @param mixed $curBoundValue
+     * @return mixed
+     */
+    private function makeLowBound(string $curBoundType, bool $curBoundIncluded, $curBoundValue)
+    {
+        if (
+            isset($this->addStep, $this->substractStep)
+            && $curBoundType === '-' && $curBoundIncluded
+        ) {
+            return ($this->addStep)($curBoundValue);
+        }
+        return $curBoundValue;
     }
 }

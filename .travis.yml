@@ -1,6 +1,5 @@
 language: php
 php:
-  - '7.2'
   - '7.3'
   - '7.4'
 
@@ -12,9 +11,9 @@ addons:
     organization: "vctls-github"
 
 script:
-  - phpunit
+  - ./vendor/bin/phpunit
   - sonar-scanner
 
 after_script:
   - wget https://scrutinizer-ci.com/ocular.phar
-  - php ocular.phar code-coverage:upload --format=php-clover coverage.clover
+  - php ocular.phar code-coverage:upload --format=php-clover ./coverage.xml

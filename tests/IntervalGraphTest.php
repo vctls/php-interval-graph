@@ -11,6 +11,16 @@ use Vctls\IntervalGraph\Truncator;
 use Vctls\IntervalGraph\Util\Date as D;
 
 /**
+ * Shorthand for creating dates from Y-m-d strings
+ *
+ * @param $dateString
+ * @return DateTime|false
+ */
+function d($dateString) {
+    return DateTime::createFromFormat('Y-m-d h:i:s', $dateString . ' 00:00:00');
+}
+
+/**
  * Class IntervalGraphTest
  * @package Vctls\IntervalGraph\Test
  */
@@ -86,9 +96,7 @@ class IntervalGraphTest extends TestCase
      */
     public function truncationProvider(): array
     {
-        $d = static function ($dateString) {
-            return DateTime::createFromFormat('Y-m-d h:i:s', $dateString . ' 00:00:00');
-        };
+
 
         return [
             [
@@ -100,9 +108,9 @@ class IntervalGraphTest extends TestCase
                 [[-1, 0], [0, 3, 1], [2, 5, 1], [5, 6]]
             ],
             [
-                [[$d('2019-01-10'), $d('2019-02-05'), 5], [$d('2019-01-28'), $d('2019-02-25')], [$d('2019-02-13'), $d('2019-02-16'), 1]],
-                [$d('2019-01-15'), $d('2019-02-12')], false,
-                [[$d('2019-01-15'), $d('2019-02-05'), 5], [$d('2019-01-28'), $d('2019-02-12')]]
+                [[d('2019-01-10'), d('2019-02-05'), 5], [d('2019-01-28'), d('2019-02-25')], [d('2019-02-13'), d('2019-02-16'), 1]],
+                [d('2019-01-15'), d('2019-02-12')], false,
+                [[d('2019-01-15'), d('2019-02-05'), 5], [d('2019-01-28'), d('2019-02-12')]]
             ],
             // TODO Borderline cases (same bounds, etc.)
         ];
@@ -123,14 +131,11 @@ class IntervalGraphTest extends TestCase
 
     public function testFlatIntervals(): void
     {
-        $d = static function ($dateString) {
-            return DateTime::createFromFormat('Y-m-d h:i:s', $dateString . ' 00:00:00');
-        };
 
         $intervals = [
-            [$d('1970-01-01'), $d('1970-01-06')],
-            [$d('1970-01-02'), $d('1970-01-04'), 2],
-            [$d('1970-01-03'), $d('1970-01-05'), 2],
+            [d('1970-01-01'), d('1970-01-06')],
+            [d('1970-01-02'), d('1970-01-04'), 2],
+            [d('1970-01-03'), d('1970-01-05'), 2],
         ];
 
         $intervalGraph = D::intvg($intervals);
@@ -176,6 +181,27 @@ class IntervalGraphTest extends TestCase
     }
 
     /**
+     * Check that identical bounds do not result in new intervals.
+     */
+    public function testIdenticalDateBounds(): void
+    {
+        $intervals = [
+            [d('1970-01-01'), d('1970-01-03'), 1],
+            [d('1970-01-01'), d('1970-01-03'), 2],
+            [d('1970-01-02'), d('1970-01-05'), 2],
+            [d('1970-01-02'), d('1970-01-05'), 3],
+        ];
+
+        $intervalGraph = D::intvg($intervals);
+        $flat = $intervalGraph->getFlattener()->flatten($intervalGraph->getIntervals());
+        $flat = $intervalGraph->getAggregator()->aggregate($flat, $intervalGraph->getIntervals());
+
+        self::assertCount(3, $flat);
+        self::assertEquals(3, $flat[0][2]);
+        self::assertEquals(5, $flat[2][2]);
+    }
+
+    /**
      * Test the `checkIntervals()` method.
      * It MUST throw an InvalidArgumentException if the intervals are incorrect.
      * It MUST NOT throw any exception if the intervals are correct.
@@ -198,14 +224,10 @@ class IntervalGraphTest extends TestCase
 
     public function testComputeNumericValues(): void
     {
-        $d = static function ($dateString) {
-            return DateTime::createFromFormat('Y-m-d h:i:s', $dateString . ' 00:00:00');
-        };
-
         $intervals = [
-            [$d('1970-01-01'), $d('1970-01-06')],
-            [$d('1970-01-02'), $d('1970-01-04'), 2],
-            [$d('1970-01-03'), $d('1970-01-05'), 2],
+            [d('1970-01-01'), d('1970-01-06')],
+            [d('1970-01-02'), d('1970-01-04'), 2],
+            [d('1970-01-03'), d('1970-01-05'), 2],
         ];
 
         $values = D::intvg($intervals)->computeNumericValues();

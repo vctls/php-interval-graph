@@ -143,7 +143,8 @@ class Flattener implements FlattenerInterface
 
             // If the current bound is the same as the next, which happens when multiple intervals
             // begin or end at the same time, skip interval creation.
-            if ($curBoundValue === $nextBoundValue) {
+            // Use weak type comparison by default, in order to correctly compare object types like DateTime.
+            if ($curBoundValue == $nextBoundValue) {
                 continue;
             }
 

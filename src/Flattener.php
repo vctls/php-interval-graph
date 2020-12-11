@@ -151,6 +151,14 @@ class Flattener implements FlattenerInterface
             $newHighBound = $this->makeHighBound($nextBoundType, $nextBoundIncluded, $nextBoundValue);
             $newLowBound = $this->makeLowBound($curBoundType, $curBoundIncluded, $curBoundValue);
 
+            // If the new high bound is lower or equal to the new low bound,
+            // which can happen when using steps,
+            // skip interval creation.
+            // TODO Check validity and add tests
+            if ($newHighBound <= $newLowBound) {
+                continue;
+            }
+
             $newIntervals[] = [
                 $newLowBound,
                 $newHighBound,
@@ -177,7 +185,7 @@ class Flattener implements FlattenerInterface
     private function makeHighBound(string $nextBoundType, bool $nextBoundIncluded, $nextBoundValue)
     {
         if (
-            isset($this->addStep, $this->substractStep) && (
+            isset($this->substractStep) && (
                 ($nextBoundIncluded && $nextBoundType === '+')
                 || (!$nextBoundIncluded && $nextBoundType === '+')
             )
@@ -198,8 +206,7 @@ class Flattener implements FlattenerInterface
     private function makeLowBound(string $curBoundType, bool $curBoundIncluded, $curBoundValue)
     {
         if (
-            isset($this->addStep, $this->substractStep)
-            && $curBoundType === '-' && $curBoundIncluded
+            isset($this->addStep) && $curBoundType === '-' && $curBoundIncluded
         ) {
             return ($this->addStep)($curBoundValue);
         }

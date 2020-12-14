@@ -366,7 +366,7 @@ class IntervalGraph implements JsonSerializable
 
         // Extract interval values.
         $intervalValues = array_column($intervals, 2);
-
+        $numericIntervals = [];
         // Convert bounds to numeric values.
         foreach ($intervals as $interval) {
             $numericIntervals[] = [

@@ -18,8 +18,8 @@ class Date
     /**
      * Create an interval of dates from two integers and a value.
      *
-     * @param $start
-     * @param $end
+     * @param int $start
+     * @param int $end
      * @param mixed $value
      * @return array
      */
@@ -61,7 +61,7 @@ class Date
      * @param int $max
      * @return DateTime
      */
-    public static function rdm($min = 1514764800, $max = 1577750400): ?DateTime
+    public static function rdm(int $min = 1514764800, int $max = 1577750400): ?DateTime
     {
         try {
             return (new DateTime)->setTimestamp(random_int($min, $max));

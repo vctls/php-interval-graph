@@ -58,7 +58,7 @@ class IntervalGraph implements JsonSerializable
      * @param array[] $intervals An array of intervals,
      * with a low bound, high bound and a value.
      */
-    public function __construct($intervals = [])
+    public function __construct(array $intervals = [])
     {
         if (!empty($intervals)) {
             $this->setIntervals($intervals);
@@ -183,7 +183,7 @@ class IntervalGraph implements JsonSerializable
         try {
             $html = $this->draw();
         } catch (Exception $e) {
-            $html = 'Error : ' . $e->getMessage();
+            $html = 'Error: ' . $e->getMessage();
         }
         return $html;
     }
@@ -542,7 +542,7 @@ class IntervalGraph implements JsonSerializable
      */
     public function jsonSerialize(): array
     {
-        if (!isset($this->values)) {
+        if (empty($this->values)) {
             $this->createView();
         }
         return $this->values;

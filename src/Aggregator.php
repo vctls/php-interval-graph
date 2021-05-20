@@ -16,6 +16,16 @@ class Aggregator implements AggregatorInterface
     /** @var Closure Aggregate interval values. */
     protected $aggregateFunction;
 
+    public function __construct()
+    {
+        $this->aggregateFunction = static function ($a, $b) {
+            if ($a === null && $b === null) {
+                return null;
+            }
+            return round($a + $b, 2);
+        };
+    }
+
     /**
      * @return Closure
      */
@@ -28,7 +38,7 @@ class Aggregator implements AggregatorInterface
      * Define the function to aggregate interval values.
      *
      * @param Closure $aggregate
-     * @return ArrayReduceAggregator
+     * @return Aggregator
      */
     public function setAggregateFunction(Closure $aggregate): AggregatorInterface
     {
@@ -36,14 +46,14 @@ class Aggregator implements AggregatorInterface
         return $this;
     }
 
-    public function __construct()
+    /**
+     * @param array $originalValues
+     * @param $adjacentIntervalValue
+     * @return mixed
+     */
+    protected function getAggregatedValues(array $originalValues, $adjacentIntervalValue)
     {
-        $this->aggregateFunction = static function ($a, $b) {
-            if ($a === null && $b === null) {
-                return null;
-            }
-            return round($a + $b, 2);
-        };
+        return ($this->aggregateFunction)(array_intersect_key($originalValues, $adjacentIntervalValue));
     }
 
     /**
@@ -70,8 +80,7 @@ class Aggregator implements AggregatorInterface
             if (empty($adjacentInterval[2])) {
                 $adjacentIntervals[$key][2] = null;
             } else {
-                $adjacentIntervals[$key][2] =
-                    ($this->aggregateFunction)(array_intersect_key($originalValues, $adjacentInterval[2]));
+                $adjacentIntervals[$key][2] = $this->getAggregatedValues($originalValues, $adjacentInterval[2]);
             }
         }
         return $adjacentIntervals;

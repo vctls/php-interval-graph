@@ -1,7 +1,5 @@
 <?php
 
-/** @noinspection PhpDocMissingThrowsInspection */
-
 require_once 'vendor/autoload.php';
 
 use Vctls\IntervalGraph\Truncator;
@@ -12,11 +10,11 @@ $today = new DateTime('today');
 $base = D::intv(0, 5);
 $intv1 = D::intv(0, 4, 7 / 10);
 $intv2 = D::intv(1, 5, 3 / 10);
-$intv3 = D::intv(2, 3, 3 / 10);
+$intv4 = D::intv(2, 3, 3 / 10);
 $overlapped1 = D::intvg([$base, $intv1]);
 $overlapped2 = D::intvg([$base, $intv2]);
-$overlapped3 = D::intvg([$base, $intv3]);
-$overlapped = D::intvg([$base, $intv1, $intv2, $intv3]);
+$overlapped3 = D::intvg([$base, $intv4]);
+$overlapped = D::intvg([$base, $intv1, $intv2, $intv4]);
 
 $withNull1 = D::intvg([$base, D::intv(0, 3, 4 / 10)]);
 $withNull2 = D::intvg([$base, D::intv(1, 2)]);
@@ -46,7 +44,7 @@ $longDateFormat = static function (DateTime $bound) {
 $long = (D::intvg($longIntervals))->setBoundToString($longDateFormat);
 
 /*
- * CUSTOM VALUE TYPES
+ * CUSTOM VALUE TYPES
  */
 
 // An aggregate function for arrays representing fractions with the same denominator.
@@ -54,7 +52,7 @@ $agg = static function ($a, $b) {
     if ($a === null && $b === null) {
         return null;
     }
-    return [$a[0] + $b[0], $b[1]];
+    return [$a[0] ?? 0 + $b[0], $b[1]];
 };
 
 // A toNumeric function…
@@ -81,18 +79,19 @@ $fractim = (D::intvg($fractions))
 $fractim->getAggregator()->setAggregateFunction($agg);
 $fract = $fractim->draw();
 
-/* /CUSTOM VALUE TYPES */
+/* /CUSTOM VALUE TYPES */
 
 /*
- * TRUNCATED INTERVALS
+ * TRUNCATED INTERVALS
  */
-$intv1 = (DateTime::createFromFormat('Y-m-d', '2019-01-01'))->add(new DateInterval('PT60H'))->setTime(0,0);
-$intv2 = (DateTime::createFromFormat('Y-m-d', '2019-01-01'))->add(new DateInterval('PT108H'))->setTime(23,59,59);
-$intv3 = (clone $intv2)->add(new DateInterval('PT60H'));
+$intv1 = DateTime::createFromFormat('Y-m-d', '2019-01-01')->add(new DateInterval('PT60H'))->setTime(0,0);
+$intv2 = DateTime::createFromFormat('Y-m-d', '2019-01-01')->add(new DateInterval('PT108H'))->setTime(23,59,59);
+$intv3 = (clone $intv2)->add(new DateInterval('PT72H'));
+$intv4 = (clone $intv2)->add(new DateInterval('PT60H'));
 
-$truncated = ($fractim->setIntervals(Truncator::truncate($fractions, $intv1, $intv2)))
+$truncated = ($fractim->setIntervals(Truncator::truncate($fractions, $intv1, $intv3)))
     ->setBoundToString($longDateFormat);
-/* /TRUNCATED INTERVALS */
+/* /TRUNCATED INTERVALS */
 
 $withDates = (D::intvg([
     [$intv1, $intv1],
@@ -100,18 +99,18 @@ $withDates = (D::intvg([
     [$intv2, $intv2],
     D::intv(1, 5, 3 / 10),
     D::intv(2, 3, 3 / 10),
-    [$intv3, $intv3],
+    [$intv4, $intv4],
 ]))
     ->setBoundToString($longDateFormat);
 
 $intvGraphs = [];
 foreach (range(0, 20) as $t) {
     $intervals = [];
-    $j = (int)rand(3, 6);
+    $j = random_int(3, 6);
     for ($i = 0; $i < $j; $i++) {
-        $intervals[] = [D::rdm(), D::rdm(), rand(1, 9) / 10];
+        $intervals[] = [D::rdm(), D::rdm(), random_int(1, 9) / 10];
     }
-    $intvGraphs[] = (D::intvg($intervals))->checkIntervals();
+    $intvGraphs[] = D::intvg($intervals);
 }
 
 
@@ -176,7 +175,7 @@ foreach (range(0, 20) as $t) {
 
 <p>
     The same graph, truncated between <?= $intv1->format('Y-m-d H:i:s') ?>
-    and <?= $intv2->format('Y-m-d H:i:s') ?>.
+    and <?= $intv3->format('Y-m-d H:i:s') ?>.
     <?= $truncated ?>
 </p>
 
@@ -201,9 +200,9 @@ $agg2 = static function ($a, $b) {
         return null;
     }
     return [
-        $a[0] + $b[0],
+        $a[0] ?? 0 + $b[0],
         $b[1],
-        $a[2] || $b[2]
+        $a[2] ?? 0 || $b[2]
     ];
 };
 

@@ -143,8 +143,7 @@ class Flattener implements FlattenerInterface
 
             // If the current bound is the same as the next, which happens when multiple intervals
             // begin or end at the same time, skip interval creation.
-            // Use weak type comparison by default, in order to correctly compare object types like DateTime.
-            if ($curBoundValue == $nextBoundValue) {
+            if (self::compareBounds($curBoundValue, $nextBoundValue) === 0) {
                 continue;
             }
 
@@ -211,5 +210,108 @@ class Flattener implements FlattenerInterface
             return ($this->addStep)($curBoundValue);
         }
         return $curBoundValue;
+    }
+
+    /**
+     * Compare bound values.
+     *
+     * Use weak type comparison by default, in order to correctly compare object types like DateTime.
+     *
+     * This method can be overridden to allow for stricter, more specific comparisons.
+     *
+     * @param $a
+     * @param $b
+     * @return int
+     */
+    protected static function compareBounds($a, $b): int
+    {
+        return $a <=> $b;
+    }
+
+    protected static function boundsAreEqual($a, $b): bool
+    {
+        return self::compareBounds($a, $b) === 0;
+    }
+
+    /**
+     * Compare values.
+     *
+     * Use weak type comparison by default, in order to correctly compare object types like DateTime.
+     *
+     * This method can be overridden to allow for stricter, more specific comparisons.
+     *
+     * @param $a
+     * @param $b
+     * @return int
+     */
+    protected static function compareValues($a, $b): int
+    {
+        return $a <=> $b;
+    }
+
+    protected static function valuesAreEqual($a, $b): bool
+    {
+        return self::compareValues($a, $b) === 0;
+    }
+
+    /**
+     * Joins adjacent intervals of equal value.
+     *
+     * Ovelapping intervals will _not_ be joined.
+     *
+     * This is useful if you have changed the values of a set of flattened intervals
+     * and wish to glue back together all intervals that have the same value.
+     *
+     * ⚠ Array keys are kept! Use _array_values_ if you want to reset them.
+     *
+     * ⚠ This method still assumes lower and higher bounds are ordered!
+     *
+     * @internal This method could be extended to join overlapping intervals,
+     * but this goes beyond my current use cases where intervals have been flattened beforehand.
+     *
+     * @param array $intervals
+     * @return array
+     */
+    public function join(array $intervals): array
+    {
+        $values = [];
+        foreach ($intervals as $key => $interval) {
+
+            $currentValue = $interval[2];
+
+            if (in_array($currentValue, $values, false)) {
+                // Skip already processed values.
+                continue;
+            }
+
+            foreach ($intervals as $key2 => $interval2) {
+
+                $nextValue = $interval2[2];
+
+                if ($key2 === $key || in_array($nextValue, $values, false)) {
+                    // Skip current interval and already processed values.
+                    continue;
+                }
+
+                if (self::valuesAreEqual($currentValue, $nextValue)) {
+
+                    // First interval comes first.
+                    if (self::boundsAreEqual(($this->addStep)($interval[1]), $interval2[0])) {
+                        $intervals[$key2][0] = $interval[0];
+                        unset($intervals[$key]);
+                    }
+
+                    // First interval comes second.
+                    if (self::boundsAreEqual(($this->addStep)($interval2[1]), $interval[0])) {
+                        $intervals[$key][0] = $interval2[0];
+                        unset($intervals[$key2]);
+                    }
+
+                }
+            }
+
+            $values[] = $currentValue;
+        }
+        return $intervals;
     }
 }

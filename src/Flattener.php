@@ -275,7 +275,8 @@ class Flattener implements FlattenerInterface
     public function join(array $intervals): array
     {
         $values = [];
-        foreach ($intervals as $key => $interval) {
+        // Since we're changing values ahead in the array, we need to pass by reference.
+        foreach ($intervals as $key => &$interval) {
 
             $currentValue = $interval[2];
 
@@ -299,6 +300,7 @@ class Flattener implements FlattenerInterface
                     if (self::boundsAreEqual(($this->addStep)($interval[1]), $interval2[0])) {
                         $intervals[$key2][0] = $interval[0];
                         unset($intervals[$key]);
+                        continue 2;
                     }
 
                     // First interval comes second.

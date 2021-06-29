@@ -10,7 +10,7 @@ class FlattenerTest extends TestCase
     public function provider(): array
     {
         return [
-            [ // First case: ordered, adjacent intervals
+            [ // Ordered, adjacent intervals
                 [
                     [0, 1, 5],
                     [2, 3, 5],
@@ -74,6 +74,31 @@ class FlattenerTest extends TestCase
                     [0, 3, 5],
                 ]
             ],
+            [ // Disordered intervals that can all be joined in one
+                [
+                    [0, 1, 5],
+                    [2, 3, 5],
+                    [6, 8, 5],
+                    [9, 12, 5],
+                    [4, 5, 5],
+                ],
+                [
+                    [0, 12, 5],
+                ]
+            ],
+            [
+                // Some intervals start at the same time.
+                // The first first found is joined.
+                [
+                    [0, 1, 5],
+                    [2, 3, 5],
+                    [2, 4, 5],
+                ],
+                [
+                    [0, 3, 5],
+                    [2, 4, 5],
+                ]
+            ],
         ];
     }
 
@@ -83,8 +108,12 @@ class FlattenerTest extends TestCase
     public function testJoin($intervals, $expected): void
     {
         $flattener = new Flattener();
-        $flattener->setAddStep(function ($value){ return $value + 1;});
-        $flattener->setSubstractStep(function ($value){ return $value - 1;});
+        $flattener->setAddStep(function ($value) {
+            return $value + 1;
+        });
+        $flattener->setSubstractStep(function ($value) {
+            return $value - 1;
+        });
         // Don't test array keys.
         $actual = array_values($flattener->join($intervals));
         self::assertEquals($actual, $expected);
